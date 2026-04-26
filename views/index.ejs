@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Manager Daily — <%= selected %></title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <h1>Manager Daily</h1>
+      <p class="sub"><%= monthLabel %> · <span class="pill">Today: <%= todayISO %></span></p>
+    </header>
+
+    <main class="layout">
+      <section class="panel calendar-panel">
+        <h2>Calendar</h2>
+        <div class="cal-nav">
+          <% const cur = new Date(selected + 'T12:00:00'); %>
+          <a class="link" href="/?date=<%= prevMonthStart %>">← <%= new Date(cur.getFullYear(), cur.getMonth() - 1, 1).toLocaleString('en-US', { month: 'short' }) %></a>
+          <a class="link" href="/?date=<%= monthStart %>">Month start</a>
+          <a class="link" href="/?date=<%= nextMonthStart %>"><%= new Date(cur.getFullYear(), cur.getMonth() + 1, 1).toLocaleString('en-US', { month: 'short' }) %> →</a>
+        </div>
+        <% if (sprintStart && sprintEnd) { %>
+        <p class="hint">Sprint highlight: <%= sprintStart %> — <%= sprintEnd %> (set <code>SPRINT_START</code> / <code>SPRINT_END</code> in <code>.env</code>)</p>
+        <% } else { %>
+        <p class="hint">Optional: set <code>SPRINT_START</code> and <code>SPRINT_END</code> (YYYY-MM-DD) to shade sprint days.</p>
+        <% } %>
+        <table class="cal">
+          <thead>
+            <tr><th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th></tr>
+          </thead>
+          <tbody>
+            <% weeks.forEach(function (row) { %>
+            <tr>
+              <% row.forEach(function (c) { %>
+              <td class="cal-cell <%= c.inMonth ? '' : 'muted' %> <%= c.isToday ? 'today' : '' %> <%= c.inSprint ? 'sprint' : '' %>">
+                <a href="/?date=<%= c.day %>"><%= c.label %></a>
+              </td>
+              <% }); %>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel tasks-panel">
+        <h2>Tasks · <%= selected %></h2>
+        <form class="row-form" method="post" action="/tasks">
+          <input type="hidden" name="day" value="<%= selected %>" />
+          <input type="text" name="title" placeholder="New task" required autocomplete="off" />
+          <input type="text" name="notes" placeholder="Notes (optional)" autocomplete="off" />
+          <button type="submit">Add</button>
+        </form>
+
+        <% if (prevDay) { %>
+        <form method="post" action="/carry-over" class="carry">
+          <input type="hidden" name="day" value="<%= selected %>" />
+          <button type="submit" class="secondary">Carry over incomplete from <%= prevDay %></button>
+        </form>
+        <% } %>
+
+        <ul class="tasks">
+          <% if (!tasks.length) { %>
+          <li class="empty">No tasks for this day.</li>
+          <% } %>
+          <% tasks.forEach(function (t) { %>
+          <li class="task <%= t.done ? 'done' : '' %>">
+            <form method="post" action="/tasks/<%= t.id %>/toggle" class="inline">
+              <button type="submit" class="check" aria-label="Toggle done"><%= t.done ? '✓' : '○' %></button>
+            </form>
+            <div class="task-body">
+              <span class="title"><%= t.title %></span>
+              <% if (t.notes) { %><span class="notes"><%= t.notes %></span><% } %>
+            </div>
+            <form method="post" action="/tasks/<%= t.id %>/delete" class="inline" onsubmit="return confirm('Delete this task?');">
+              <button type="submit" class="danger ghost">Remove</button>
+            </form>
+          </li>
+          <% }); %>
+        </ul>
+      </section>
+
+      <aside class="panel reports-panel" aria-label="Direct reports">
+        <h2>My team</h2>
+        <% if (!jiraConfigured) { %>
+        <p class="hint">Connect Jira in <code>.env</code> to load avatars and profile links for your direct reports.</p>
+        <% } else if (directReportsError) { %>
+        <p class="hint error-text"><%= directReportsError %></p>
+        <% } else { %>
+        <ul class="report-list">
+          <% directReports.forEach(function (r) { %>
+          <li class="report-card">
+            <% if (r.avatarUrl) { %>
+            <img class="report-avatar" src="<%= r.avatarUrl %>" alt="" width="40" height="40" loading="lazy" />
+            <% } else { %>
+            <div class="report-avatar report-avatar--placeholder" aria-hidden="true"><%= (r.displayName || '?').charAt(0).toUpperCase() %></div>
+            <% } %>
+            <div class="report-body">
+              <% if (r.peopleUrl) { %>
+              <a class="report-name link" href="<%= r.peopleUrl %>" target="_blank" rel="noopener"><%= r.displayName %></a>
+              <% } else { %>
+              <span class="report-name"><%= r.displayName %></span>
+              <% } %>
+              <% if (r.assigneeClause) { %>
+              <code class="report-jql" title="Jira Cloud JQL fragment"><%= r.assigneeClause %></code>
+              <% } %>
+              <% if (r.hint) { %>
+              <span class="report-hint"><%= r.hint %></span>
+              <% } %>
+            </div>
+          </li>
+          <% }); %>
+        </ul>
+        <% } %>
+        <p class="hint report-foot">Edit names in <code>JIRA_DIRECT_REPORTS</code> in <code>.env</code>. Use <code>Name|accountId</code> if Jira finds the wrong person.</p>
+      </aside>
+
+      <section class="panel integrations">
+        <h2>Jira</h2>
+        <% if (!jiraConfigured) { %>
+        <p class="hint">Connect <strong>Jira Cloud</strong> with an API token (not a separate “Jira API key”):</p>
+        <ol class="setup-steps">
+          <li>Create a token: <a class="link" href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">Atlassian API tokens</a>.</li>
+          <li>In <code>.env</code> set <code>ATLASSIAN_EMAIL</code>, <code>ATLASSIAN_API_TOKEN</code>, and <code>ATLASSIAN_SITE</code> (e.g. <code>https://your-site.atlassian.net</code>, no trailing slash).</li>
+          <li>Optional: <code>JIRA_JQL</code> to override the default query (my open issues).</li>
+        </ol>
+        <% } else if (jiraError) { %>
+        <p class="hint error-text">Could not load Jira: <%= jiraError %></p>
+        <% } else if (!jiraIssues.length) { %>
+        <p class="hint">No issues matched your JQL. Adjust <code>JIRA_JQL</code> in <code>.env</code>.</p>
+        <% } else { %>
+        <p class="hint">Open issues from your JQL. Add one to <strong><%= selected %></strong>.</p>
+        <ul class="jira-list">
+          <% jiraIssues.forEach(function (issue) { %>
+          <li class="jira-row">
+            <div class="jira-meta">
+              <a class="link jira-key" href="<%= issue.browseUrl %>" target="_blank" rel="noopener"><%= issue.key %></a>
+              <span class="jira-status"><%= issue.status %></span>
+              <span class="jira-type"><%= issue.issueType %></span>
+            </div>
+            <div class="jira-summary"><%= issue.summary %></div>
+            <form method="post" action="/tasks/from-jira" class="jira-add">
+              <input type="hidden" name="day" value="<%= selected %>" />
+              <input type="hidden" name="key" value="<%= issue.key %>" />
+              <input type="hidden" name="summary" value="<%= issue.summary %>" />
+              <button type="submit" class="secondary">Add to day</button>
+            </form>
+          </li>
+          <% }); %>
+        </ul>
+        <% } %>
+      </section>
+    </main>
+  </body>
+</html>
