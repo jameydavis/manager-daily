@@ -1,8 +1,8 @@
 #!/bin/sh
-# Backup local .env before push → ~/manger-env/manager-daily.env
+# Backup local .env before push → ~/manager-env/manager-daily.env
 ROOT="$(git rev-parse --show-toplevel)"
 ENV_SRC="$ROOT/.env"
-DEST_DIR="${HOME}/manger-env"
+DEST_DIR="${HOME}/manager-env"
 DEST_FILE="$DEST_DIR/manager-daily.env"
 
 if [ -f "$ENV_SRC" ]; then

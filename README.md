@@ -33,7 +33,7 @@ npm start
 
 ## Git hooks (`.env` backup on push)
 
-Before each **`git push`**, the **`pre-push`** hook copies `.env` to **`~/manger-env/manager-daily.env`** (folder is created automatically). Hooks live in **`githooks/`**; enable them once per clone:
+Before each **`git push`**, the **`pre-push`** hook copies `.env` to **`~/manager-env/manager-daily.env`** (folder is created automatically). Hooks live in **`githooks/`**; enable them once per clone:
 
 ```bash
 git config core.hooksPath githooks
