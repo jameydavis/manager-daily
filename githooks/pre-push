@@ -1,0 +1,16 @@
+#!/bin/sh
+# Backup local .env before push → ~/manger-env/manager-daily.env
+ROOT="$(git rev-parse --show-toplevel)"
+ENV_SRC="$ROOT/.env"
+DEST_DIR="${HOME}/manger-env"
+DEST_FILE="$DEST_DIR/manager-daily.env"
+
+if [ -f "$ENV_SRC" ]; then
+  mkdir -p "$DEST_DIR"
+  cp "$ENV_SRC" "$DEST_FILE"
+  echo "pre-push: copied .env → $DEST_FILE"
+else
+  echo "pre-push: no .env at repo root; skip backup"
+fi
+
+exit 0

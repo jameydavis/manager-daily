@@ -31,6 +31,14 @@ npm start
 - **My team:** resolves people with **`GET /rest/api/3/user/search`**. Default names are built in; override with **`JIRA_DIRECT_REPORTS`**. Use **`Name|accountId`** to disambiguate.
 - Data: `data/manager-daily.db` by default (`DATA_DIR` optional).
 
+## Git hooks (`.env` backup on push)
+
+Before each **`git push`**, the **`pre-push`** hook copies `.env` to **`~/manger-env/manager-daily.env`** (folder is created automatically). Hooks live in **`githooks/`**; enable them once per clone:
+
+```bash
+git config core.hooksPath githooks
+```
+
 ## GitHub
 
 Authenticate the CLI, then create and push (example):
