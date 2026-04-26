@@ -13,7 +13,7 @@
   <header class="header">
     <h1>Manager Daily</h1>
     <p class="sub">
-      <%= monthLabel %> · <span class="pill">Today: <%= todayISO %></span>
+      <%= monthLabel %> · <a class="link pill" href="/?date=<%= todayISO %>">Today: <%= todayISO %></a>
     </p>
   </header>
 
@@ -65,7 +65,8 @@
                       <tr>
                         <% row.forEach(function (c) { %>
                           <td
-                            class="cal-cell <%= c.inMonth ? '' : 'muted' %> <%= c.isToday ? 'today' : '' %> <% if (sprintRangeActive && c.inMonth) { %><%= c.inSprint ? 'cal-sprint-day' : 'cal-non-sprint-day' %><% } %>">
+                            data-day="<%= c.day %>"
+                            class="cal-cell <%= c.inMonth ? '' : 'muted' %> <%= c.isToday ? 'today' : '' %> <%= c.day === selected ? 'cal-selected' : '' %> <% if (sprintRangeActive && c.inMonth) { %><%= c.inSprint ? 'cal-sprint-day' : 'cal-non-sprint-day' %><% } %>">
                             <a href="/?date=<%= c.day %>">
                               <%= c.label %>
                             </a>

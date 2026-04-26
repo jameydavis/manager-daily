@@ -178,6 +178,20 @@ body {
   text-decoration: none;
 }
 
+/* Selected day (from ?date=) — ring uses theme accent */
+.cal-cell.cal-selected a {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.cal-cell.cal-selected.muted a {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.cal-cell.cal-selected.today a {
+  box-shadow: 0 0 0 2px var(--accent);
+  background: var(--today);
+}
+
 .cal-cell.muted a {
   color: var(--muted);
   opacity: 0.55;
@@ -478,7 +492,7 @@ a.report-name:hover {
 
 .report-issue-status {
   flex: 0 0 auto;
-  color: var(--muted);
+  color: #fb923c;
   font-size: 0.72rem;
 }
 
@@ -513,6 +527,14 @@ a.report-name:hover {
   width: 100%;
 }
 
+.report-other-statuses[open] {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(42, 53, 69, 0.95);
+  border-radius: 8px;
+  padding: 0.35rem 0.45rem 0.5rem;
+  box-sizing: border-box;
+}
+
 .report-other-statuses-summary {
   cursor: pointer;
   font-size: 0.8rem;
@@ -538,7 +560,7 @@ a.report-name:hover {
 .report-other-statuses .report-issues--other {
   border-top: 1px solid var(--border);
   margin-top: 0.4rem;
-  padding-left: 0.15rem;
+  padding: 0.35rem 0.15rem 0;
 }
 
 .report-foot {

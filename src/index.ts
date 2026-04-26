@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "./timezone.js";
 import path from "node:path";
 import express from "express";
 import { z } from "zod";
@@ -103,13 +104,7 @@ app.get("/", async (req, res, next) => {
       }
     }
 
-    const weeks = monthGrid(
-      year,
-      month,
-      today(),
-      sprintHighlightStart,
-      sprintHighlightEnd
-    );
+    const weeks = monthGrid(year, month, today(), sprintHighlightStart, sprintHighlightEnd);
 
     const sprintRangeActive = Boolean(sprintHighlightStart && sprintHighlightEnd);
     const calendarHeading =
