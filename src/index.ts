@@ -6,6 +6,7 @@ import { addTask, carryOverIncomplete, deleteTask, listTasks, toggleTask } from 
 import { formatDay, monthGrid, parseDay, prevCalendarDay, today } from "./dates.js";
 import { fetchActiveSprintForBoard, getJiraBoardIdFromEnv } from "./boardSprint.js";
 import { parseDirectReportNamesFromEnv, resolveDirectReports } from "./directReports.js";
+import { enrichDirectReportsWithIssues } from "./reportAssigneeIssues.js";
 import { getJiraEnv, searchIssues } from "./jira.js";
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -91,11 +92,12 @@ app.get("/", async (req, res, next) => {
       : "Calendar";
 
     const reportLines = parseDirectReportNamesFromEnv();
-    let directReports: Awaited<ReturnType<typeof resolveDirectReports>> = [];
+    let directReports: Awaited<ReturnType<typeof enrichDirectReportsWithIssues>> = [];
     let directReportsError: string | null = null;
     if (jiraEnv && reportLines.length) {
       try {
-        directReports = await resolveDirectReports(jiraEnv, reportLines);
+        const resolved = await resolveDirectReports(jiraEnv, reportLines);
+        directReports = await enrichDirectReportsWithIssues(jiraEnv, resolved);
       } catch (e) {
         directReportsError = e instanceof Error ? e.message : String(e);
       }
