@@ -1,8 +1,19 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 
-const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
+/** Repo root (folder with package.json), not process.cwd() — avoids writing to the wrong DB when the app is started from another directory. */
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+function resolveDataDir(): string {
+  const raw = process.env.DATA_DIR?.trim();
+  if (!raw) return path.join(projectRoot, "data");
+  if (path.isAbsolute(raw)) return raw;
+  return path.resolve(projectRoot, raw);
+}
+
+const dataDir = resolveDataDir();
 const dbPath = path.join(dataDir, "manager-daily.db");
 
 fs.mkdirSync(dataDir, { recursive: true });
@@ -32,6 +43,13 @@ db.exec(`
   );
 `);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_day ON tasks(day)`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_suggestion_dismissals (
+    fingerprint TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
 
 export type TaskRow = {
   id: number;
@@ -70,6 +88,19 @@ export function toggleTask(id: number): void {
 
 export function deleteTask(id: number): void {
   db.prepare(`DELETE FROM tasks WHERE id = ?`).run(id);
+}
+
+export function listDismissedEmailFingerprints(): string[] {
+  const rows = db.prepare(`SELECT fingerprint FROM email_suggestion_dismissals`).all() as {
+    fingerprint: string;
+  }[];
+  return rows.map((r) => r.fingerprint);
+}
+
+export function dismissEmailSuggestion(fingerprint: string): void {
+  const fp = fingerprint.trim().slice(0, 500);
+  if (!fp) return;
+  db.prepare(`INSERT OR IGNORE INTO email_suggestion_dismissals (fingerprint) VALUES (?)`).run(fp);
 }
 
 export function carryOverIncomplete(fromDay: string, toDay: string): number {

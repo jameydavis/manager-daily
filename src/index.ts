@@ -2,7 +2,15 @@ import "dotenv/config";
 import path from "node:path";
 import express from "express";
 import { z } from "zod";
-import { addTask, carryOverIncomplete, deleteTask, listTasks, toggleTask } from "./db.js";
+import {
+  addTask,
+  carryOverIncomplete,
+  deleteTask,
+  dismissEmailSuggestion,
+  listDismissedEmailFingerprints,
+  listTasks,
+  toggleTask,
+} from "./db.js";
 import {
   formatDay,
   monthGrid,
@@ -19,6 +27,7 @@ import {
 import { parseDirectReportNamesFromEnv, resolveDirectReports } from "./directReports.js";
 import { enrichDirectReportsWithIssues } from "./reportAssigneeIssues.js";
 import { getJiraEnv, searchIssues } from "./jira.js";
+import { fetchImportantEmailMatches, importantEmailConfigured } from "./importantEmail.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -29,6 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(process.cwd(), "public")));
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const fingerprintParam = z.string().trim().min(1).max(500);
 
 app.get("/", async (req, res, next) => {
   try {
@@ -119,6 +129,16 @@ app.get("/", async (req, res, next) => {
       }
     }
 
+    const emailConfigured = importantEmailConfigured();
+    let emailMatches: Awaited<ReturnType<typeof fetchImportantEmailMatches>>["matches"] = [];
+    let emailMatchError: string | null = null;
+    if (emailConfigured) {
+      const dismissed = new Set(listDismissedEmailFingerprints());
+      const emailResult = await fetchImportantEmailMatches(dismissed);
+      emailMatches = emailResult.matches;
+      emailMatchError = emailResult.error;
+    }
+
     res.render("index", {
       selected,
       monthLabel,
@@ -142,6 +162,9 @@ app.get("/", async (req, res, next) => {
       jiraError,
       directReports,
       directReportsError,
+      emailConfigured,
+      emailMatches,
+      emailMatchError,
     });
   } catch (e) {
     next(e);
@@ -196,6 +219,32 @@ app.post("/tasks/from-jira", (req, res) => {
   const title = summary ? `${key}: ${summary}` : key;
   addTask(day.data, title, notes);
   res.redirect(`/?date=${encodeURIComponent(day.data)}`);
+});
+
+app.post("/tasks/from-email", (req, res) => {
+  const day = dayParam.safeParse(req.body.day);
+  const title = typeof req.body.title === "string" ? req.body.title.trim() : "";
+  const notes = typeof req.body.notes === "string" ? req.body.notes.trim() : "";
+  const fp = fingerprintParam.safeParse(typeof req.body.fingerprint === "string" ? req.body.fingerprint : "");
+  if (!day.success || !title || !fp.success) {
+    res.redirect(req.get("referer") || "/");
+    return;
+  }
+  addTask(day.data, title, notes || null);
+  dismissEmailSuggestion(fp.data);
+  res.redirect(`/?date=${encodeURIComponent(day.data)}`);
+});
+
+app.post("/email-suggestions/dismiss", (req, res) => {
+  const day = dayParam.safeParse(req.body.day);
+  const fp = fingerprintParam.safeParse(typeof req.body.fingerprint === "string" ? req.body.fingerprint : "");
+  if (!fp.success) {
+    res.redirect(req.get("referer") || "/");
+    return;
+  }
+  dismissEmailSuggestion(fp.data);
+  const target = day.success ? `/?date=${encodeURIComponent(day.data)}` : req.get("referer") || "/";
+  res.redirect(target);
 });
 
 app.listen(PORT, () => {
