@@ -1,16 +1,56 @@
 #!/bin/sh
-# Backup local .env before push → ~/manager-env/manager-daily.env
+# Before push: copy local secrets + SQLite DB → ~/manager-env/
 ROOT="$(git rev-parse --show-toplevel)"
 ENV_SRC="$ROOT/.env"
 DEST_DIR="${HOME}/manager-env"
-DEST_FILE="$DEST_DIR/manager-daily.env"
+DB_NAME="manager-daily.db"
+ENV_DEST="$DEST_DIR/manager-daily.env"
+DB_DEST="$DEST_DIR/$DB_NAME"
 
+mkdir -p "$DEST_DIR"
+
+# --- .env
 if [ -f "$ENV_SRC" ]; then
-  mkdir -p "$DEST_DIR"
-  cp "$ENV_SRC" "$DEST_FILE"
-  echo "pre-push: copied .env → $DEST_FILE"
+  cp "$ENV_SRC" "$ENV_DEST"
+  echo "pre-push: copied .env → $ENV_DEST"
 else
-  echo "pre-push: no .env at repo root; skip backup"
+  echo "pre-push: no .env at repo root; skip"
+fi
+
+# --- SQLite (same resolution as src/db.ts: DATA_DIR or ./data)
+DATA_DIR_CUSTOM=""
+if [ -f "$ENV_SRC" ]; then
+  line="$(grep -E '^[[:space:]]*DATA_DIR[[:space:]]*=' "$ENV_SRC" | head -1)"
+  if [ -n "$line" ]; then
+    val="${line#*=}"
+    val="$(printf '%s' "$val" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/\r$//')"
+    case "$val" in
+      \"*\") val="${val#\"}"; val="${val%\"}" ;;
+      \'*\') val="${val#\'}"; val="${val%\'}" ;;
+    esac
+    DATA_DIR_CUSTOM="$val"
+  fi
+fi
+
+DB_SRC=""
+if [ -n "$DATA_DIR_CUSTOM" ]; then
+  case "$DATA_DIR_CUSTOM" in
+    /*) ;;
+    *) DATA_DIR_CUSTOM="$ROOT/$DATA_DIR_CUSTOM" ;;
+  esac
+  if [ -f "$DATA_DIR_CUSTOM/$DB_NAME" ]; then
+    DB_SRC="$DATA_DIR_CUSTOM/$DB_NAME"
+  fi
+fi
+if [ -z "$DB_SRC" ] && [ -f "$ROOT/data/$DB_NAME" ]; then
+  DB_SRC="$ROOT/data/$DB_NAME"
+fi
+
+if [ -n "$DB_SRC" ]; then
+  cp "$DB_SRC" "$DB_DEST"
+  echo "pre-push: copied DB ($DB_SRC) → $DB_DEST"
+else
+  echo "pre-push: no $DB_NAME found (check DATA_DIR or $ROOT/data); skip DB"
 fi
 
 exit 0

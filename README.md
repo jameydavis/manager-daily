@@ -33,7 +33,16 @@ npm start
 
 ## Git hooks (`.env` backup on push)
 
-Before each **`git push`**, the **`pre-push`** hook copies `.env` to **`~/manager-env/manager-daily.env`** (folder is created automatically). Hooks live in **`githooks/`**; enable them once per clone:
+Before each **`git push`**, the **`pre-push`** hook copies into **`~/manager-env/`** (created automatically):
+
+| File | Backup name |
+|------|-------------|
+| `.env` | `manager-daily.env` |
+| SQLite DB (`manager-daily.db`) | `manager-daily.db` |
+
+The DB path matches the app: **`DATA_DIR`** from `.env` if set, otherwise **`data/manager-daily.db`** under the repo.
+
+Hooks live in **`githooks/`**; enable them once per clone:
 
 ```bash
 git config core.hooksPath githooks
