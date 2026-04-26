@@ -18,6 +18,19 @@ export function today(): string {
   return formatDay(new Date());
 }
 
+/** Inclusive calendar days from today through sprint end; 0 if today is after end. */
+export function sprintDaysLeftPhrase(todayISO: string, sprintEndISO: string): string {
+  const t = parseDay(todayISO);
+  const e = parseDay(sprintEndISO);
+  if (!t || !e) return "";
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const diff = Math.round((e.getTime() - t.getTime()) / msPerDay);
+  const inclusive = diff + 1;
+  const days = Math.max(0, inclusive);
+  if (days === 1) return "1 day left";
+  return `${days} days left`;
+}
+
 export function prevCalendarDay(day: string): string | null {
   const d = parseDay(day);
   if (!d) return null;

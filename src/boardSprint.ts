@@ -9,6 +9,10 @@ export function getJiraBoardIdFromEnv(): number | null {
   return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
 }
 
+type AgileBoard = {
+  name?: string;
+};
+
 type AgileSprintList = {
   values?: Array<{
     name?: string;
@@ -17,6 +21,17 @@ type AgileSprintList = {
     endDate?: string;
   }>;
 };
+
+/**
+ * Board metadata (Agile REST).
+ * https://developer.atlassian.com/cloud/jira/software/rest/api-group-board/#api-agile-1-0-board-boardid-get
+ */
+export async function fetchAgileBoard(env: JiraEnv, boardId: number): Promise<{ name: string } | null> {
+  const data = (await jiraRequestJson(env, `/rest/agile/1.0/board/${boardId}`)) as AgileBoard;
+  const name = data.name?.trim();
+  if (!name) return null;
+  return { name };
+}
 
 /** ISO 8601 from Jira → YYYY-MM-DD (UTC calendar date). */
 function isoToDay(iso: string | undefined): string | null {

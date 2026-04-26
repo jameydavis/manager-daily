@@ -436,15 +436,6 @@ a.report-name:hover {
   text-decoration: underline;
 }
 
-.report-jql {
-  display: block;
-  font-size: 0.68rem;
-  color: var(--muted);
-  word-break: break-all;
-  line-height: 1.35;
-  margin-top: 0.15rem;
-}
-
 .report-hint {
   font-size: 0.75rem;
   color: #fbbf24;

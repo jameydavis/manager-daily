@@ -34,20 +34,16 @@
           </a>
       </div>
       <% if (sprintBoardError && jiraConfigured && jiraBoardId) { %>
-        <p class="hint error-text">Could not load active sprint for board <code><%= jiraBoardId %></code>: <%=
+        <p class="hint error-text">Could not load active sprint for <% if (jiraBoardName) { %><%= jiraBoardName %><% } else { %>board <code><%= jiraBoardId %></code><% } %>: <%=
             sprintBoardError %>
         </p>
         <% } %>
           <% if (sprintStart && sprintEnd) { %>
+            <% if (sprintSource !== 'jira') { %>
             <p class="hint">
-              <% if (sprintSource==='jira' ) { %>
-                <%= sprintStart %> — <%= sprintEnd %>
-                    <% if (jiraBoardId) { %> · board <code><%= jiraBoardId %></code>
-                      <% } %>
-                        <% } else { %>
-                          <%= sprintStart %> — <%= sprintEnd %> (<code>SPRINT_START</code> / <code>SPRINT_END</code>)
-                              <% } %>
+              <%= sprintStart %> — <%= sprintEnd %> (<code>SPRINT_START</code> / <code>SPRINT_END</code>)
             </p>
+            <% } %>
             <% } else if (!sprintBoardError) { %>
               <p class="hint">Set <code>JIRA_BOARD_ID</code> (from your board URL, e.g. <code>…/boards/1577</code>) or
                 <code>SPRINT_START</code> / <code>SPRINT_END</code> to shade sprint days.</p>
@@ -156,10 +152,6 @@
                                 <%= r.displayName %>
                               </span>
                               <% } %>
-                                <% if (r.assigneeClause) { %>
-                                  <code class="report-jql"
-                                    title="Jira Cloud JQL fragment"><%= r.assigneeClause %></code>
-                                  <% } %>
                                     <% if (r.hint) { %>
                                       <span class="report-hint">
                                         <%= r.hint %>

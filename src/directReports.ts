@@ -7,7 +7,6 @@ export type DirectReportRow = {
   displayName: string;
   avatarUrl: string | null;
   peopleUrl: string | null;
-  assigneeClause: string | null;
   hint: string | null;
 };
 
@@ -119,14 +118,12 @@ function rowFromUser(
   const avatarUrl =
     user.avatarUrls?.["48x48"] ?? user.avatarUrls?.["32x32"] ?? user.avatarUrls?.["24x24"] ?? null;
   const peopleUrl = accountId ? `${env.site}/jira/people/${encodeURIComponent(accountId)}` : null;
-  const assigneeClause = accountId ? `assignee = "${accountId}"` : null;
   return {
     configuredName,
     accountId,
     displayName,
     avatarUrl,
     peopleUrl,
-    assigneeClause,
     hint,
   };
 }
@@ -146,7 +143,6 @@ async function resolveDirectReportLine(env: JiraEnv, line: string): Promise<Dire
       displayName: name || accountIdHint,
       avatarUrl: null,
       peopleUrl: null,
-      assigneeClause: null,
       hint: "Invalid accountId or no permission to view this user.",
     };
   }
@@ -160,7 +156,6 @@ async function resolveDirectReportLine(env: JiraEnv, line: string): Promise<Dire
       displayName: name,
       avatarUrl: null,
       peopleUrl: null,
-      assigneeClause: null,
       hint: hint ?? "Not found",
     };
   }

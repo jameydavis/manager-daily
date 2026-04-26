@@ -3,8 +3,19 @@ import path from "node:path";
 import express from "express";
 import { z } from "zod";
 import { addTask, carryOverIncomplete, deleteTask, listTasks, toggleTask } from "./db.js";
-import { formatDay, monthGrid, parseDay, prevCalendarDay, today } from "./dates.js";
-import { fetchActiveSprintForBoard, getJiraBoardIdFromEnv } from "./boardSprint.js";
+import {
+  formatDay,
+  monthGrid,
+  parseDay,
+  prevCalendarDay,
+  sprintDaysLeftPhrase,
+  today,
+} from "./dates.js";
+import {
+  fetchActiveSprintForBoard,
+  fetchAgileBoard,
+  getJiraBoardIdFromEnv,
+} from "./boardSprint.js";
 import { parseDirectReportNamesFromEnv, resolveDirectReports } from "./directReports.js";
 import { enrichDirectReportsWithIssues } from "./reportAssigneeIssues.js";
 import { getJiraEnv, searchIssues } from "./jira.js";
@@ -43,6 +54,7 @@ app.get("/", async (req, res, next) => {
     let sprintHighlightEnd: string | null = null;
     let sprintSource: "jira" | "env" | null = null;
     let sprintName: string | null = null;
+    let jiraBoardName: string | null = null;
     let sprintBoardError: string | null = null;
     const jiraBoardId = getJiraBoardIdFromEnv();
 
@@ -58,6 +70,7 @@ app.get("/", async (req, res, next) => {
     }
 
     if (jiraEnv && jiraBoardId != null) {
+      const boardPromise = fetchAgileBoard(jiraEnv, jiraBoardId).catch(() => null);
       try {
         const active = await fetchActiveSprintForBoard(jiraEnv, jiraBoardId);
         if (active) {
@@ -69,6 +82,8 @@ app.get("/", async (req, res, next) => {
       } catch (e) {
         sprintBoardError = e instanceof Error ? e.message : String(e);
       }
+      const boardMeta = await boardPromise;
+      jiraBoardName = boardMeta?.name ?? null;
     }
     if (sprintHighlightStart == null || sprintHighlightEnd == null) {
       if (envSprintStart && envSprintEnd) {
@@ -87,9 +102,10 @@ app.get("/", async (req, res, next) => {
     );
 
     const sprintRangeActive = Boolean(sprintHighlightStart && sprintHighlightEnd);
-    const calendarHeading = sprintRangeActive
-      ? (sprintName?.trim() || "Current sprint")
-      : "Calendar";
+    const calendarHeading =
+      sprintRangeActive && sprintHighlightEnd
+        ? `${jiraBoardName?.trim() || sprintName?.trim() || "Current sprint"} — ${sprintDaysLeftPhrase(today(), sprintHighlightEnd)}`
+        : "Calendar";
 
     const reportLines = parseDirectReportNamesFromEnv();
     let directReports: Awaited<ReturnType<typeof enrichDirectReportsWithIssues>> = [];
@@ -113,6 +129,7 @@ app.get("/", async (req, res, next) => {
       sprintEnd: sprintHighlightEnd,
       sprintSource,
       sprintName,
+      jiraBoardName,
       jiraBoardId,
       sprintBoardError,
       sprintRangeActive,
