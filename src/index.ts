@@ -4,12 +4,11 @@ import express from "express";
 import { z } from "zod";
 import { addTask, carryOverIncomplete, deleteTask, listTasks, toggleTask } from "./db.js";
 import { formatDay, monthGrid, parseDay, prevCalendarDay, today } from "./dates.js";
+import { fetchActiveSprintForBoard, getJiraBoardIdFromEnv } from "./boardSprint.js";
 import { parseDirectReportNamesFromEnv, resolveDirectReports } from "./directReports.js";
 import { getJiraEnv, searchIssues } from "./jira.js";
 
 const PORT = Number(process.env.PORT) || 3000;
-const sprintStart = process.env.SPRINT_START?.trim() || null;
-const sprintEnd = process.env.SPRINT_END?.trim() || null;
 
 const app = express();
 app.set("view engine", "ejs");
@@ -31,13 +30,20 @@ app.get("/", async (req, res, next) => {
 
     const year = d.getFullYear();
     const month = d.getMonth();
-    const monthStart = formatDay(new Date(year, month, 1));
     const monthLabel = d.toLocaleString("en-US", { month: "long", year: "numeric" });
     const tasks = listTasks(selected);
     const prevDay = prevCalendarDay(selected);
-    const weeks = monthGrid(year, month, today(), sprintStart, sprintEnd);
     const prevMonthStart = formatDay(new Date(year, month - 1, 1));
     const nextMonthStart = formatDay(new Date(year, month + 1, 1));
+
+    const envSprintStart = process.env.SPRINT_START?.trim() || null;
+    const envSprintEnd = process.env.SPRINT_END?.trim() || null;
+    let sprintHighlightStart: string | null = null;
+    let sprintHighlightEnd: string | null = null;
+    let sprintSource: "jira" | "env" | null = null;
+    let sprintName: string | null = null;
+    let sprintBoardError: string | null = null;
+    const jiraBoardId = getJiraBoardIdFromEnv();
 
     const jiraEnv = getJiraEnv();
     let jiraIssues: Awaited<ReturnType<typeof searchIssues>> = [];
@@ -49,6 +55,40 @@ app.get("/", async (req, res, next) => {
         jiraError = e instanceof Error ? e.message : String(e);
       }
     }
+
+    if (jiraEnv && jiraBoardId != null) {
+      try {
+        const active = await fetchActiveSprintForBoard(jiraEnv, jiraBoardId);
+        if (active) {
+          sprintHighlightStart = active.start;
+          sprintHighlightEnd = active.end;
+          sprintSource = "jira";
+          sprintName = active.name;
+        }
+      } catch (e) {
+        sprintBoardError = e instanceof Error ? e.message : String(e);
+      }
+    }
+    if (sprintHighlightStart == null || sprintHighlightEnd == null) {
+      if (envSprintStart && envSprintEnd) {
+        sprintHighlightStart = envSprintStart;
+        sprintHighlightEnd = envSprintEnd;
+        if (!sprintSource) sprintSource = "env";
+      }
+    }
+
+    const weeks = monthGrid(
+      year,
+      month,
+      today(),
+      sprintHighlightStart,
+      sprintHighlightEnd
+    );
+
+    const sprintRangeActive = Boolean(sprintHighlightStart && sprintHighlightEnd);
+    const calendarHeading = sprintRangeActive
+      ? (sprintName?.trim() || "Current sprint")
+      : "Calendar";
 
     const reportLines = parseDirectReportNamesFromEnv();
     let directReports: Awaited<ReturnType<typeof resolveDirectReports>> = [];
@@ -63,13 +103,18 @@ app.get("/", async (req, res, next) => {
 
     res.render("index", {
       selected,
-      monthStart,
       monthLabel,
       tasks,
       prevDay,
       weeks,
-      sprintStart,
-      sprintEnd,
+      sprintStart: sprintHighlightStart,
+      sprintEnd: sprintHighlightEnd,
+      sprintSource,
+      sprintName,
+      jiraBoardId,
+      sprintBoardError,
+      sprintRangeActive,
+      calendarHeading,
       todayISO: today(),
       prevMonthStart,
       nextMonthStart,

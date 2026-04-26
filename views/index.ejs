@@ -14,17 +14,26 @@
 
     <main class="layout">
       <section class="panel calendar-panel">
-        <h2>Calendar</h2>
+        <h2 class="calendar-title"><%= calendarHeading %></h2>
         <div class="cal-nav">
           <% const cur = new Date(selected + 'T12:00:00'); %>
           <a class="link" href="/?date=<%= prevMonthStart %>">← <%= new Date(cur.getFullYear(), cur.getMonth() - 1, 1).toLocaleString('en-US', { month: 'short' }) %></a>
-          <a class="link" href="/?date=<%= monthStart %>">Month start</a>
+          <span class="cal-nav-month"><%= monthLabel %></span>
           <a class="link" href="/?date=<%= nextMonthStart %>"><%= new Date(cur.getFullYear(), cur.getMonth() + 1, 1).toLocaleString('en-US', { month: 'short' }) %> →</a>
         </div>
+        <% if (sprintBoardError && jiraConfigured && jiraBoardId) { %>
+        <p class="hint error-text">Could not load active sprint for board <code><%= jiraBoardId %></code>: <%= sprintBoardError %></p>
+        <% } %>
         <% if (sprintStart && sprintEnd) { %>
-        <p class="hint">Sprint highlight: <%= sprintStart %> — <%= sprintEnd %> (set <code>SPRINT_START</code> / <code>SPRINT_END</code> in <code>.env</code>)</p>
-        <% } else { %>
-        <p class="hint">Optional: set <code>SPRINT_START</code> and <code>SPRINT_END</code> (YYYY-MM-DD) to shade sprint days.</p>
+        <p class="hint">
+          <% if (sprintSource === 'jira') { %>
+          <%= sprintStart %> — <%= sprintEnd %><% if (jiraBoardId) { %> · board <code><%= jiraBoardId %></code><% } %>
+          <% } else { %>
+          <%= sprintStart %> — <%= sprintEnd %> (<code>SPRINT_START</code> / <code>SPRINT_END</code>)
+          <% } %>
+        </p>
+        <% } else if (!sprintBoardError) { %>
+        <p class="hint">Set <code>JIRA_BOARD_ID</code> (from your board URL, e.g. <code>…/boards/1577</code>) or <code>SPRINT_START</code> / <code>SPRINT_END</code> to shade sprint days.</p>
         <% } %>
         <table class="cal">
           <thead>
@@ -34,7 +43,7 @@
             <% weeks.forEach(function (row) { %>
             <tr>
               <% row.forEach(function (c) { %>
-              <td class="cal-cell <%= c.inMonth ? '' : 'muted' %> <%= c.isToday ? 'today' : '' %> <%= c.inSprint ? 'sprint' : '' %>">
+              <td class="cal-cell <%= c.inMonth ? '' : 'muted' %> <%= c.isToday ? 'today' : '' %> <% if (sprintRangeActive && c.inMonth) { %><%= c.inSprint ? 'cal-sprint-day' : 'cal-non-sprint-day' %><% } %>">
                 <a href="/?date=<%= c.day %>"><%= c.label %></a>
               </td>
               <% }); %>

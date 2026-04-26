@@ -26,7 +26,7 @@ npm start
 - Pick a day (`?date=YYYY-MM-DD` or use the calendar).
 - Add tasks, optional notes, mark done, delete.
 - **Carry over** copies incomplete tasks from the previous calendar day into the selected day.
-- Calendar shows **today** and optional **sprint** days via `SPRINT_START` / `SPRINT_END` in `.env`.
+- Calendar shows **today** and **active sprint** dates from **`JIRA_BOARD_ID`** ([Agile board sprint API](https://developer.atlassian.com/cloud/jira/software/rest/api-group-board/#api-agile-1-0-board-boardid-sprint-get)), e.g. board URL `…/boards/1577` → `JIRA_BOARD_ID=1577`. If the API returns nothing or errors, optional `SPRINT_START` / `SPRINT_END` in `.env` are used as a fallback.
 - **Jira:** set `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`, `ATLASSIAN_SITE`. Uses **`POST /rest/api/3/search/jql`** ([CHANGE-2046](https://developer.atlassian.com/changelog/#CHANGE-2046)).
 - **My team:** resolves people with **`GET /rest/api/3/user/search`**. Default names are built in; override with **`JIRA_DIRECT_REPORTS`**. Use **`Name|accountId`** to disambiguate.
 - Data: `data/manager-daily.db` by default (`DATA_DIR` optional).
