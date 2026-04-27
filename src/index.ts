@@ -201,6 +201,19 @@ app.post("/carry-over", (req, res) => {
   res.redirect(`/?date=${encodeURIComponent(day.data)}`);
 });
 
+const EMAIL_FOLLOW_UP_TITLE = "Follow up from Email";
+
+app.post("/tasks/from-email-paste", (req, res) => {
+  const day = dayParam.safeParse(req.body.day);
+  const pasted = typeof req.body.pasted === "string" ? req.body.pasted.trim() : "";
+  if (!day.success || !pasted) {
+    res.redirect(req.get("referer") || "/");
+    return;
+  }
+  addTask(day.data, EMAIL_FOLLOW_UP_TITLE, pasted);
+  res.redirect(`/?date=${encodeURIComponent(day.data)}`);
+});
+
 app.post("/tasks/from-jira", (req, res) => {
   const day = dayParam.safeParse(req.body.day);
   const key = typeof req.body.key === "string" ? req.body.key.trim() : "";

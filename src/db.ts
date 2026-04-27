@@ -123,3 +123,8 @@ export function carryOverIncomplete(fromDay: string, toDay: string): number {
   }
   return n;
 }
+
+/** Releases the SQLite connection (e.g. tests or graceful shutdown). */
+export function closeDatabase(): void {
+  db.close();
+}

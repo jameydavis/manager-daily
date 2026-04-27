@@ -88,6 +88,14 @@
         <button type="submit">Add</button>
       </form>
 
+      <form class="email-paste-form" method="post" action="/tasks/from-email-paste">
+        <input type="hidden" name="day" value="<%= selected %>" />
+        <label class="email-paste-label" for="email-paste">Follow up from email</label>
+        <textarea id="email-paste" name="pasted" class="email-paste-input" rows="4"
+          placeholder="Paste subject, snippet, or key lines from Outlook…" autocomplete="off"></textarea>
+        <button type="submit" class="secondary">Add “Follow up from Email” task</button>
+      </form>
+
       <% if (prevDay) { %>
         <form method="post" action="/carry-over" class="carry">
           <input type="hidden" name="day" value="<%= selected %>" />

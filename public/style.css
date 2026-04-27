@@ -244,6 +244,40 @@ body {
   color: var(--text);
 }
 
+.email-paste-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.email-paste-label {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.email-paste-input {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.email-paste-form button {
+  align-self: flex-start;
+}
+
 button {
   padding: 0.45rem 0.75rem;
   border-radius: 6px;
