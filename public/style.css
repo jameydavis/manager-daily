@@ -615,30 +615,181 @@ a.report-name:hover {
 
 .desk-pet-panel {
   pointer-events: auto;
+  position: relative;
   width: 12rem;
-  padding: 0.55rem 0.65rem 0.65rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  padding: 0.68rem 0.75rem 0.78rem;
+  border-radius: 17px 20px 22px 16px / 19px 17px 18px 21px;
+  border: 1px solid rgba(232, 176, 255, 0.42);
+  background:
+    radial-gradient(ellipse 130% 90% at 8% -5%, rgba(255, 200, 230, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 80% at 102% 8%, rgba(180, 150, 255, 0.18) 0%, transparent 48%),
+    radial-gradient(ellipse 70% 55% at 50% 118%, rgba(255, 140, 200, 0.08) 0%, transparent 45%),
+    linear-gradient(168deg, #2d2238 0%, #221c32 38%, #171a2c 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.07) inset,
+    0 10px 36px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(120, 80, 160, 0.25),
+    0 0 40px rgba(200, 130, 255, 0.28),
+    0 0 56px rgba(255, 120, 190, 0.14);
 }
 
-.desk-pet-header {
-  margin-bottom: 0.35rem;
+.desk-pet-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Author `display` on panels must not override the hidden attribute */
+#desk-pet-alive[hidden],
+#desk-pet-revive-panel[hidden] {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.desk-pet-header--toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  margin-bottom: 0.4rem;
+}
+
+.desk-pet-header--toolbar .desk-pet-title {
+  min-width: 0;
+  flex: 1;
+}
+
+.desk-pet-collapse-toggle {
+  flex-shrink: 0;
+  padding: 0.22rem 0.48rem !important;
+  font-size: 0.78rem !important;
+  line-height: 1.1 !important;
+  min-width: 1.85rem;
+  font-weight: 700;
+}
+
+.desk-pet-alive-compact,
+.desk-pet-revive-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.05rem 0.1rem 0.35rem;
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: #f2ebff;
+  flex-wrap: wrap;
+}
+
+.desk-pet-revive-compact-sep {
+  color: rgba(220, 200, 250, 0.55);
+}
+
+.desk-pet-revive-compact-need {
+  color: #ffc9e8;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.desk-pet-revive-inline {
+  margin-left: 0.1rem;
+  padding: 0.2rem 0.48rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 200, 230, 0.5);
+  background: rgba(80, 45, 110, 0.55);
+  color: #fff5fc;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.desk-pet-revive-inline:hover {
+  background: rgba(110, 60, 140, 0.65);
+}
+
+.desk-pet--compact .desk-pet-panel {
+  width: fit-content;
+  min-width: 7.5rem;
+  max-width: min(100vw - 2rem, 12.5rem);
+  padding: 0.42rem 0.55rem 0.52rem;
+}
+
+.desk-pet--compact .desk-pet-header--toolbar {
+  margin-bottom: 0.12rem;
+}
+
+.desk-pet--compact .desk-pet-title {
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+}
+
+.desk-pet--compact .desk-pet-alive-compact,
+.desk-pet--compact .desk-pet-revive-compact {
+  padding-bottom: 0.12rem;
 }
 
 .desk-pet-title {
   font-size: 0.72rem;
   font-weight: 650;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #d4b8f0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .desk-pet-stage {
   display: flex;
   justify-content: center;
+  position: relative;
+  min-height: 4.25rem;
   padding: 0.35rem 0 0.2rem;
+}
+
+.desk-pet-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.desk-pet-heart {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  color: #ff7eb3;
+  line-height: 1;
+  text-shadow:
+    0 0 8px rgba(255, 140, 200, 0.95),
+    0 1px 2px rgba(120, 40, 90, 0.35);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: desk-pet-heart-rise 1.5s ease-out var(--heart-delay, 0s) forwards;
+  font-size: calc(0.62rem * var(--heart-scale, 1));
+  transform: translate(calc(-50% + var(--heart-drift, 0px)), 0);
+}
+
+@keyframes desk-pet-heart-rise {
+  0% {
+    transform: translate(calc(-50% + var(--heart-drift, 0px)), 0.35rem) scale(0.25);
+    opacity: 0;
+  }
+
+  14% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--heart-drift, 0px)), -0.15rem) scale(1);
+  }
+
+  70% {
+    opacity: 0.92;
+    transform: translate(calc(-50% + var(--heart-drift, 0px)), -1.85rem) scale(1.06);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--heart-drift, 0px)), -3.1rem) scale(1.12);
+  }
 }
 
 .desk-pet-creature {
@@ -659,6 +810,138 @@ a.report-name:hover {
   align-items: center;
   justify-content: center;
   transition: transform 0.15s ease;
+}
+
+/* Random idle motion (~10s apart, see desk-pet.js) */
+.desk-pet-creature--idle-rock {
+  animation: desk-pet-idle-rock 2.2s ease-in-out;
+}
+
+.desk-pet-creature--idle-bounce {
+  animation: desk-pet-idle-bounce 1.85s cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.desk-pet-creature--idle-sway {
+  animation: desk-pet-idle-sway 2.1s ease-in-out;
+}
+
+.desk-pet-creature--idle-jelly {
+  animation: desk-pet-idle-jelly 1.95s ease-in-out;
+}
+
+.desk-pet-creature--idle-nod {
+  animation: desk-pet-idle-nod 1.65s ease-in-out;
+}
+
+@keyframes desk-pet-idle-rock {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  20% {
+    transform: rotate(-9deg);
+  }
+
+  50% {
+    transform: rotate(8deg);
+  }
+
+  80% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes desk-pet-idle-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+
+  18% {
+    transform: translateY(-5px) scale(1.04, 0.96);
+  }
+
+  38% {
+    transform: translateY(0) scale(0.97, 1.03);
+  }
+
+  58% {
+    transform: translateY(-4px) scale(1.03, 0.97);
+  }
+
+  78% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+@keyframes desk-pet-idle-sway {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateX(5px) rotate(3deg);
+  }
+
+  75% {
+    transform: translateX(-3px) rotate(-1.5deg);
+  }
+}
+
+@keyframes desk-pet-idle-jelly {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+
+  15% {
+    transform: scale(1.06, 0.92);
+  }
+
+  30% {
+    transform: scale(0.94, 1.06);
+  }
+
+  45% {
+    transform: scale(1.04, 0.95);
+  }
+
+  60% {
+    transform: scale(0.96, 1.04);
+  }
+
+  75% {
+    transform: scale(1.02, 0.98);
+  }
+}
+
+@keyframes desk-pet-idle-nod {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  20% {
+    transform: translateY(3px);
+  }
+
+  40% {
+    transform: translateY(-4px);
+  }
+
+  60% {
+    transform: translateY(2px);
+  }
+
+  80% {
+    transform: translateY(-2px);
+  }
 }
 
 .desk-pet-ear {
@@ -709,7 +992,7 @@ a.report-name:hover {
   opacity: 0.65;
 }
 
-.desk-pet-creature--giggle .desk-pet-blush {
+.desk-pet-creature--tickle .desk-pet-blush {
   opacity: 0.85;
   transform: scale(1.08);
 }
@@ -772,13 +1055,13 @@ a.report-name:hover {
   opacity: 0.7;
 }
 
-.desk-pet-creature--happy:not(.desk-pet-creature--giggle):not(.desk-pet-creature--munch) .desk-pet-eye {
+.desk-pet-creature--happy:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch) .desk-pet-eye {
   height: 0.55rem;
   border-radius: 50%;
   transform: scaleY(0.72);
 }
 
-.desk-pet-creature--giggle .desk-pet-eye {
+.desk-pet-creature--tickle .desk-pet-eye {
   height: 0.38rem;
   border-radius: 50%;
   transform: scaleY(0.55);
@@ -810,21 +1093,21 @@ a.report-name:hover {
   margin-top: 0.12rem;
 }
 
-.desk-pet-creature--happy:not(.desk-pet-creature--giggle):not(.desk-pet-creature--munch) .desk-pet-mouth {
+.desk-pet-creature--happy:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch) .desk-pet-mouth {
   width: 0.88rem;
   height: 0.38rem;
   border-width: 2.5px;
 }
 
 /* Max fullness — content “full face” */
-.desk-pet-creature--full:not(.desk-pet-creature--giggle):not(.desk-pet-creature--munch):not(
+.desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(
     .desk-pet-creature--refuse-feed
   )
   .desk-pet-face {
   transform: scale(1.05);
 }
 
-.desk-pet-creature--full:not(.desk-pet-creature--giggle):not(.desk-pet-creature--munch):not(
+.desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(
     .desk-pet-creature--refuse-feed
   )
   .desk-pet-eye {
@@ -835,7 +1118,7 @@ a.report-name:hover {
   opacity: 0.92;
 }
 
-.desk-pet-creature--full:not(.desk-pet-creature--giggle):not(.desk-pet-creature--munch):not(
+.desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(
     .desk-pet-creature--refuse-feed
   )
   .desk-pet-eye-shine {
@@ -843,7 +1126,7 @@ a.report-name:hover {
   transform: scale(0.75);
 }
 
-.desk-pet-creature--full:not(.desk-pet-creature--giggle):not(.desk-pet-creature--munch):not(
+.desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(
     .desk-pet-creature--refuse-feed
   )
   .desk-pet-mouth {
@@ -856,7 +1139,7 @@ a.report-name:hover {
   box-shadow: inset 0 -2px 3px rgba(90, 50, 85, 0.15);
 }
 
-.desk-pet-creature--full:not(.desk-pet-creature--giggle):not(.desk-pet-creature--munch):not(
+.desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(
     .desk-pet-creature--refuse-feed
   )
   .desk-pet-blush {
@@ -865,14 +1148,14 @@ a.report-name:hover {
 }
 
 /* Big grin while tickled */
-.desk-pet-creature--giggle .desk-pet-mouth {
+.desk-pet-creature--tickle .desk-pet-mouth {
   width: 0.95rem;
   height: 0.48rem;
   border: 2.5px solid rgba(90, 50, 85, 0.9);
   border-top: none;
   border-radius: 0 0 50% 50% / 0 0 100% 100%;
   background: rgba(80, 45, 75, 0.12);
-  animation: desk-pet-mouth-laugh 0.95s ease;
+  animation: desk-pet-mouth-laugh 1s ease;
 }
 
 @keyframes desk-pet-mouth-laugh {
@@ -1060,6 +1343,72 @@ a.report-name:hover {
   animation: desk-pet-giggle 0.95s ease;
 }
 
+.desk-pet-creature--tickle-twist {
+  animation: desk-pet-tickle-twist 1s ease;
+}
+
+.desk-pet-creature--tickle-boing {
+  animation: desk-pet-tickle-boing 0.92s ease;
+}
+
+@keyframes desk-pet-tickle-twist {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  12% {
+    transform: rotate(12deg) scale(1.03);
+  }
+
+  28% {
+    transform: rotate(-10deg) scale(1.02);
+  }
+
+  44% {
+    transform: rotate(9deg) scale(1.04);
+  }
+
+  60% {
+    transform: rotate(-7deg) scale(1.01);
+  }
+
+  76% {
+    transform: rotate(4deg) scale(1.02);
+  }
+
+  90% {
+    transform: rotate(-2deg) scale(1);
+  }
+}
+
+@keyframes desk-pet-tickle-boing {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+
+  18% {
+    transform: translateY(-6px) scale(1.06, 0.94);
+  }
+
+  34% {
+    transform: translateY(3px) scale(0.94, 1.07);
+  }
+
+  50% {
+    transform: translateY(-5px) scale(1.05, 0.95);
+  }
+
+  66% {
+    transform: translateY(2px) scale(0.96, 1.05);
+  }
+
+  82% {
+    transform: translateY(-2px) scale(1.02, 0.98);
+  }
+}
+
 @keyframes desk-pet-refuse-shake {
   0%,
   100% {
@@ -1168,16 +1517,19 @@ a.report-name:hover {
   min-height: 2.6em;
   font-size: 0.78rem;
   line-height: 1.35;
-  color: var(--text);
+  color: #f2ebff;
   text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .desk-pet-meter {
-  height: 4px;
+  height: 5px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(20, 14, 32, 0.65);
+  border: 1px solid rgba(255, 200, 230, 0.14);
   overflow: hidden;
   margin-bottom: 0.45rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .desk-pet-meter-fill {
@@ -1185,8 +1537,9 @@ a.report-name:hover {
   height: 100%;
   width: 50%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #5a8fd4, var(--accent));
+  background: linear-gradient(90deg, #ff8ec8, #e8a0ff 55%, #b8a0ff);
   transition: width 0.35s ease;
+  box-shadow: 0 0 10px rgba(255, 160, 220, 0.45);
 }
 
 .desk-pet-actions {
@@ -1199,6 +1552,19 @@ a.report-name:hover {
   padding: 0.32rem 0.4rem;
   font-size: 0.75rem;
   font-weight: 600;
+  border-radius: 10px;
+}
+
+.desk-pet-actions button.secondary {
+  border-color: rgba(220, 180, 255, 0.45);
+  background: rgba(38, 28, 56, 0.65);
+  color: #ebe4ff;
+}
+
+.desk-pet-actions button.secondary:hover {
+  border-color: rgba(255, 200, 230, 0.55);
+  background: rgba(52, 38, 72, 0.75);
+  color: #fff;
 }
 
 .desk-pet-revive-panel {
@@ -1219,7 +1585,7 @@ a.report-name:hover {
   margin: 0;
   font-size: 0.78rem;
   line-height: 1.45;
-  color: var(--muted);
+  color: #b9a8d4;
 }
 
 .desk-pet-revive-btn {
@@ -1228,15 +1594,18 @@ a.report-name:hover {
   padding: 0.48rem 0.65rem;
   font-size: 0.85rem;
   font-weight: 650;
-  border-radius: 8px;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: #0f1419;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 190, 240, 0.45);
+  background: linear-gradient(165deg, #ffb8e8 0%, #d898ff 55%, #9b7cf0 100%);
+  color: #1a1224;
   cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 4px 14px rgba(200, 100, 200, 0.35);
 }
 
 .desk-pet-revive-btn:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06) saturate(1.05);
 }
 
 @keyframes desk-pet-panel-wobble-cute {
@@ -1252,10 +1621,13 @@ a.report-name:hover {
 
 .desk-pet-panel--alert-cute {
   animation: desk-pet-panel-wobble-cute 2.8s ease-in-out infinite;
+  border-color: rgba(255, 200, 230, 0.65) !important;
   box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 10px 36px rgba(0, 0, 0, 0.48),
     0 0 0 1px rgba(255, 186, 230, 0.55),
-    0 0 22px rgba(255, 160, 210, 0.22);
+    0 0 36px rgba(255, 160, 210, 0.35),
+    0 0 52px rgba(255, 140, 200, 0.2) !important;
 }
 
 @keyframes desk-pet-panel-shake-urgent {
@@ -1279,11 +1651,13 @@ a.report-name:hover {
 
 .desk-pet-panel--alert-urgent {
   animation: desk-pet-panel-shake-urgent 0.42s ease-in-out infinite;
-  border-color: rgba(248, 113, 113, 0.7) !important;
+  border-color: rgba(255, 150, 150, 0.85) !important;
   box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.35),
-    0 0 0 2px rgba(248, 113, 113, 0.5),
-    0 0 24px rgba(248, 113, 113, 0.28) !important;
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 10px 36px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(248, 113, 113, 0.55),
+    0 0 40px rgba(248, 113, 113, 0.42),
+    0 0 56px rgba(255, 100, 120, 0.22) !important;
 }
 
 @media (max-width: 520px) {
