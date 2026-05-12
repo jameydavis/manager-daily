@@ -261,6 +261,50 @@
               <% } %>
     </section>
   </main>
+
+  <aside id="desk-pet" class="desk-pet" aria-label="Desk pet">
+    <div id="desk-pet-alive" class="desk-pet-panel desk-pet-panel--alive">
+      <div class="desk-pet-header">
+        <span class="desk-pet-title">Desk buddy</span>
+      </div>
+      <div class="desk-pet-stage">
+        <div class="desk-pet-creature" id="desk-pet-creature" aria-hidden="true">
+          <span class="desk-pet-ear desk-pet-ear--left"></span>
+          <span class="desk-pet-ear desk-pet-ear--right"></span>
+          <span class="desk-pet-blush desk-pet-blush--left"></span>
+          <span class="desk-pet-blush desk-pet-blush--right"></span>
+          <span class="desk-pet-face">
+            <span class="desk-pet-eye-row">
+              <span class="desk-pet-eye"><span class="desk-pet-eye-shine"></span></span>
+              <span class="desk-pet-eye"><span class="desk-pet-eye-shine"></span></span>
+            </span>
+            <span class="desk-pet-mouth"></span>
+          </span>
+        </div>
+      </div>
+      <p class="desk-pet-status" id="desk-pet-status" aria-live="polite"></p>
+      <div
+        class="desk-pet-meter"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="72"
+        aria-label="How full your desk buddy is"
+      >
+        <span class="desk-pet-meter-fill" id="desk-pet-meter-fill"></span>
+      </div>
+      <div class="desk-pet-actions">
+        <button type="button" class="secondary" id="desk-pet-feed">Feed</button>
+        <button type="button" class="secondary" id="desk-pet-tickle">Tickle</button>
+      </div>
+    </div>
+    <div id="desk-pet-revive-panel" class="desk-pet-panel desk-pet-revive-panel" hidden>
+      <p class="desk-pet-revive-title">Your desk buddy nodded off…</p>
+      <p class="desk-pet-revive-hint">They went too long without a meal. Wake them with a little care.</p>
+      <button type="button" class="desk-pet-revive-btn" id="desk-pet-revive">Revive buddy</button>
+    </div>
+  </aside>
+  <script src="/desk-pet.js" defer></script>
 </body>
 
 </html>
