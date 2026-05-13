@@ -9,7 +9,10 @@
     const stack = document.getElementById("toast-stack");
     if (!stack) return;
     const pet = document.getElementById("desk-pet");
-    const anchorRight = Boolean(pet && pet.classList.contains("desk-pet--corner-bl"));
+    const petHidden = document.documentElement.dataset.deskPet === "off";
+    const anchorRight = Boolean(
+      !petHidden && pet && pet.classList.contains("desk-pet--corner-bl"),
+    );
     stack.classList.toggle("toast-stack--anchor-right", anchorRight);
   }
 

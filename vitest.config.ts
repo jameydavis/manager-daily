@@ -8,5 +8,15 @@ export default defineConfig({
     env: {
       TZ: "America/New_York",
     },
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/**/*.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/express-augment.d.ts",
+        "src/index.ts",
+      ],
+    },
   },
 });

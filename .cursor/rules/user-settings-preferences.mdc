@@ -1,0 +1,23 @@
+---
+description: Keep user-facing toggles in header User Settings; do not drop existing prefs
+alwaysApply: true
+---
+
+# User Settings and client preferences
+
+## Single place for toggles
+
+- **User-facing on/off (or similar) preferences** belong in the **Settings** dialog in `views/partials/site-header.ejs`, wired through `public/user-settings.js`.
+- When adding a new preference, **add a control there** and persist it (typically **`localStorage`** with a **`managerDaily*`** key). Apply preferences early in JS (this file already syncs `document.documentElement` `dataset` attributes where CSS or other scripts depend on them).
+- **Do not remove** existing settings from that dialog when adding new ones unless the product explicitly deprecates them.
+
+## Related surfaces
+
+- **Desk buddy** has its own dialog for name, corner, and palette (`views/index.ejs` + `public/desk-pet.js`). **Visibility on/off** stays in **User Settings** (`managerDailyDeskPetEnabled`) so it stays discoverable next to other app-wide prefs.
+- For **no flash** of wrong UI on the main day view, keep the small inline bootstrap in `views/index.ejs` in sync when a preference needs it before deferred scripts run.
+
+## Checklist before finishing UI work
+
+- [ ] New toggle added to User Settings (or documented exception).
+- [ ] Storage key documented in code comment next to the constant in `user-settings.js` (or adjacent module).
+- [ ] Toasts / pet anchoring updated if the preference affects layout (`public/toasts.js`, `syncAnchorFromDeskPet`).

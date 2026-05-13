@@ -234,6 +234,114 @@ body {
   margin: 0;
 }
 
+.header-settings-btn {
+  font-size: inherit;
+}
+
+.user-settings-dialog {
+  box-sizing: border-box;
+  margin: auto;
+  padding: 0;
+  width: 22rem;
+  max-width: calc(100vw - 2rem);
+  border: none;
+  background: transparent;
+  color: var(--text);
+}
+
+.user-settings-dialog::backdrop {
+  background: rgba(4, 6, 10, 0.72);
+  backdrop-filter: blur(5px);
+}
+
+.user-settings-card {
+  padding: 1rem 1.15rem 1.05rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 14px 40px rgba(0, 0, 0, 0.45);
+}
+
+.user-settings-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.user-settings-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.user-settings-close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  margin: -0.2rem -0.15rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.user-settings-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.user-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.user-settings-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.user-settings-check input {
+  margin: 0.2rem 0 0;
+  flex-shrink: 0;
+}
+
+.user-settings-check--after {
+  margin-top: 0.85rem;
+}
+
+/* User preference: hide desk buddy (see user-settings.js) */
+html[data-desk-pet="off"] #desk-pet {
+  display: none !important;
+}
+
+.user-settings-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.user-settings-foot {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .auth-main {
   padding: 1.5rem;
   max-width: 26rem;
@@ -602,6 +710,20 @@ body {
 .cal-cell.cal-non-sprint-day.today:not(.muted) a {
   opacity: 0.72;
   font-weight: 600;
+}
+
+/* User preference: hide sprint in/out emphasis (see user-settings.js) */
+html[data-sprint-shading="off"] .cal-cell.cal-sprint-day:not(.muted) a,
+html[data-sprint-shading="off"] .cal-cell.cal-non-sprint-day:not(.muted) a {
+  font-weight: unset;
+  color: inherit;
+  opacity: unset;
+}
+
+html[data-sprint-shading="off"] .cal-cell.cal-sprint-day.today:not(.muted) a,
+html[data-sprint-shading="off"] .cal-cell.cal-non-sprint-day.today:not(.muted) a {
+  font-weight: unset;
+  opacity: unset;
 }
 
 .cal-cell a:hover {

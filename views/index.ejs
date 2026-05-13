@@ -11,6 +11,16 @@
 </head>
 
 <body>
+  <script>
+    try {
+      if (localStorage.getItem('managerDailySprintShading') === '0') {
+        document.documentElement.dataset.sprintShading = 'off';
+      }
+      if (localStorage.getItem('managerDailyDeskPetEnabled') === '0') {
+        document.documentElement.dataset.deskPet = 'off';
+      }
+    } catch (e) { /* ignore */ }
+  </script>
   <header class="header">
     <%- include('partials/site-header') %>
   </header>

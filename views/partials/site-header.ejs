@@ -8,6 +8,15 @@
     <% } %>
   </div>
   <nav class="header-auth" aria-label="Account">
+    <button
+      type="button"
+      class="secondary ghost header-settings-btn"
+      id="user-settings-open"
+      aria-haspopup="dialog"
+      aria-controls="user-settings"
+    >
+      Settings
+    </button>
     <% if (currentUser) { %>
       <span class="header-auth-name" title="<%= currentUser.email %>"><%= authUserDisplayLabel(currentUser) %></span>
       <form method="post" action="/auth/logout" class="inline header-auth-out">
@@ -20,3 +29,36 @@
     <% } %>
   </nav>
 </div>
+
+<dialog id="user-settings" class="user-settings-dialog" aria-labelledby="user-settings-title">
+  <div class="user-settings-card">
+    <div class="user-settings-head">
+      <h2 id="user-settings-title" class="user-settings-title">User settings</h2>
+      <button
+        type="button"
+        class="user-settings-close"
+        id="user-settings-close"
+        aria-label="Close settings"
+      >
+        ×
+      </button>
+    </div>
+    <div class="user-settings-body">
+      <label class="user-settings-check">
+        <input type="checkbox" id="user-settings-sprint-shading" autocomplete="off" checked />
+        <span>Sprint shading on calendar</span>
+      </label>
+      <p class="user-settings-hint">When on, days inside the active sprint look bolder; days outside look muted.</p>
+      <label class="user-settings-check user-settings-check--after">
+        <input type="checkbox" id="user-settings-desk-pet" autocomplete="off" checked />
+        <span>Show desk buddy</span>
+      </label>
+      <p class="user-settings-hint">When off, the pet is hidden. Name, corner, and color stay saved for when you turn it back on.</p>
+    </div>
+    <div class="user-settings-foot">
+      <button type="button" class="secondary" id="user-settings-done">Done</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="/user-settings.js" defer></script>
