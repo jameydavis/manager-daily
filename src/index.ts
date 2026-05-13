@@ -1,18 +1,30 @@
 import "dotenv/config";
 import "./timezone.js";
 import path from "node:path";
+import cookieParser from "cookie-parser";
 import express from "express";
 import { z } from "zod";
+import { authUserDisplayLabel } from "./authTypes.js";
+import { attachAuthUser, logoutSession, setSessionCookie, SESSION_COOKIE, SESSION_TTL_SECONDS } from "./authMiddleware.js";
+import { loginBodySchema, signupBodySchema } from "./authValidation.js";
+import { hashPassword, verifyPassword } from "./passwords.js";
 import {
   addTask,
   carryOverIncomplete,
+  createSession,
+  createUser,
   deleteTask,
   dismissEmailSuggestion,
+  findUserWithHashByEmail,
   getTaskDone,
   listDismissedEmailFingerprints,
   listTasks,
+  normalizeEmail,
   toggleTask,
 } from "./db.js";
+import { DEFAULT_JIRA_JQL, getJiraEnv, searchIssues } from "./jira.js";
+import { mergeJiraCredentialsIntoDotenv } from "./dotenvMerge.js";
+import { verifyJiraSignupCredentials } from "./jiraSignupVerify.js";
 import {
   formatDay,
   monthGrid,
@@ -28,7 +40,6 @@ import {
 } from "./boardSprint.js";
 import { parseDirectReportNamesFromEnv, resolveDirectReports } from "./directReports.js";
 import { enrichDirectReportsWithIssues } from "./reportAssigneeIssues.js";
-import { getJiraEnv, searchIssues } from "./jira.js";
 import { fetchImportantEmailMatches, importantEmailConfigured } from "./importantEmail.js";
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -36,13 +47,203 @@ const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 app.set("view engine", "ejs");
 app.set("views", path.join(process.cwd(), "views"));
+app.locals.authUserDisplayLabel = authUserDisplayLabel;
+
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
+app.use(attachAuthUser);
 app.use(express.static(path.join(process.cwd(), "public")));
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const fingerprintParam = z.string().trim().min(1).max(500);
 
 const MAX_DESK_PET_QUEUE = 50;
+
+function cookieSessionTtlSeconds(): number {
+  return SESSION_TTL_SECONDS;
+}
+
+function safeRedirectPath(raw: unknown, fallback = "/"): string {
+  if (typeof raw !== "string") return fallback;
+  const t = raw.trim();
+  if (!t.startsWith("/") || t.startsWith("//")) return fallback;
+  if (t.includes("\r") || t.includes("\n")) return fallback;
+  return t;
+}
+
+app.get("/login", (req, res) => {
+  if (req.authUser) {
+    res.redirect(safeRedirectPath(req.query.redirect, "/"));
+    return;
+  }
+  res.render("login", {
+    errors: null as string[] | null,
+    redirect: safeRedirectPath(req.query.redirect, "/"),
+    formEmail: "",
+  });
+});
+
+function signupWizardStepForIssues(issues: z.ZodIssue[]): 1 | 2 {
+  const step2 = new Set(["atlassianSite", "atlassianApiToken", "jiraBoardId"]);
+  const hit2 = issues.some((i) => i.path[0] != null && step2.has(String(i.path[0])));
+  return hit2 ? 2 : 1;
+}
+
+function readSignupForm(body: Record<string, unknown>): {
+  formEmail: string;
+  formFirst: string;
+  formLast: string;
+  formAtlassianSite: string;
+  formJiraBoardId: string;
+} {
+  return {
+    formEmail: typeof body.email === "string" ? body.email : "",
+    formFirst: typeof body.firstName === "string" ? body.firstName : "",
+    formLast: typeof body.lastName === "string" ? body.lastName : "",
+    formAtlassianSite: typeof body.atlassianSite === "string" ? body.atlassianSite : "",
+    formJiraBoardId: typeof body.jiraBoardId === "string" ? body.jiraBoardId : "",
+  };
+}
+
+app.get("/signup", (req, res) => {
+  if (req.authUser) {
+    res.redirect("/");
+    return;
+  }
+  res.render("signup", {
+    errors: null as string[] | null,
+    wizardStep: 1,
+    formEmail: "",
+    formFirst: "",
+    formLast: "",
+    formAtlassianSite: "",
+    formJiraBoardId: "",
+  });
+});
+
+app.post("/auth/login", (req, res) => {
+  const redirect = safeRedirectPath(req.body.redirect, "/");
+  const parsed = loginBodySchema.safeParse({
+    email: req.body.email,
+    password: req.body.password,
+  });
+  if (!parsed.success) {
+    const errors = parsed.error.issues.map((i) => i.message);
+    res.status(400).render("login", {
+      errors,
+      redirect,
+      formEmail: typeof req.body.email === "string" ? req.body.email : "",
+    });
+    return;
+  }
+  const { email, password } = parsed.data;
+  const row = findUserWithHashByEmail(email);
+  if (!row || !verifyPassword(password, row.password_hash)) {
+    res.status(400).render("login", {
+      errors: ["Invalid email or password."],
+      redirect,
+      formEmail: email,
+    });
+    return;
+  }
+  const token = createSession(row.id, cookieSessionTtlSeconds());
+  setSessionCookie(res, token);
+  res.redirect(redirect);
+});
+
+app.post("/auth/signup", async (req, res, next) => {
+  try {
+    const forms = readSignupForm(req.body as Record<string, unknown>);
+    const parsed = signupBodySchema.safeParse({
+      email: req.body.email,
+      password: req.body.password,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      atlassianSite: req.body.atlassianSite,
+      atlassianApiToken: req.body.atlassianApiToken,
+      jiraBoardId: req.body.jiraBoardId,
+    });
+    if (!parsed.success) {
+      const errors = parsed.error.issues.map((i) => i.message);
+      const wizardStep = signupWizardStepForIssues(parsed.error.issues);
+      res.status(400).render("signup", {
+        errors,
+        wizardStep,
+        ...forms,
+      });
+      return;
+    }
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      atlassianSite,
+      atlassianApiToken,
+      jiraBoardId,
+    } = parsed.data;
+
+    const jiraEnv = {
+      site: atlassianSite,
+      email: normalizeEmail(email),
+      token: atlassianApiToken,
+      jql: (process.env.JIRA_JQL ?? "").trim() || DEFAULT_JIRA_JQL,
+    };
+    const jiraOk = await verifyJiraSignupCredentials(jiraEnv, jiraBoardId);
+    if (!jiraOk.ok) {
+      res.status(400).render("signup", {
+        errors: [jiraOk.message],
+        wizardStep: 2,
+        ...forms,
+      });
+      return;
+    }
+
+    let id: number;
+    try {
+      id = createUser(email, hashPassword(password), firstName, lastName);
+    } catch (e: unknown) {
+      const code =
+        e && typeof e === "object" && "code" in e ? String((e as { code: unknown }).code) : "";
+      const isDup =
+        code === "SQLITE_CONSTRAINT_UNIQUE" ||
+        (e instanceof Error && /UNIQUE|unique/i.test(e.message));
+      res.status(400).render("signup", {
+        errors: [isDup ? "An account with this email already exists." : "Could not create account."],
+        wizardStep: isDup ? 2 : 1,
+        ...forms,
+      });
+      return;
+    }
+
+    let envWriteFailed = false;
+    try {
+      mergeJiraCredentialsIntoDotenv({
+        email: normalizeEmail(email),
+        site: atlassianSite,
+        token: atlassianApiToken,
+        boardId: jiraBoardId,
+      });
+    } catch (err) {
+      console.error("Could not write .env after signup:", err);
+      envWriteFailed = true;
+    }
+
+    const token = createSession(id, cookieSessionTtlSeconds());
+    setSessionCookie(res, token);
+    const qs = new URLSearchParams({ signedUp: "1" });
+    if (envWriteFailed) qs.set("envWriteFailed", "1");
+    res.redirect(`/?${qs.toString()}`);
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.post("/auth/logout", (req, res) => {
+  const token = req.cookies?.[SESSION_COOKIE];
+  logoutSession(res, typeof token === "string" ? token : undefined);
+  res.redirect("/login");
+});
 
 /** Build `/?date=…` with optional desk-buddy gamify query params (stripped client-side after use). */
 function homeForDay(day: string, deskPet?: { create?: number; complete?: number }): string {
@@ -73,6 +274,9 @@ app.get("/", async (req, res, next) => {
       res.redirect(`/?date=${encodeURIComponent(today())}`);
       return;
     }
+
+    const signUpEnvNote = req.query.signedUp === "1";
+    const signupEnvWriteFailed = req.query.envWriteFailed === "1";
 
     const year = d.getFullYear();
     const month = d.getMonth();
@@ -183,6 +387,8 @@ app.get("/", async (req, res, next) => {
       emailConfigured,
       emailMatches,
       emailMatchError,
+      signUpEnvNote,
+      signupEnvWriteFailed,
     });
   } catch (e) {
     next(e);

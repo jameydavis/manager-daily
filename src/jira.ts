@@ -1,5 +1,9 @@
 import { Buffer } from "node:buffer";
 
+/** Default JQL when `JIRA_JQL` is unset (matches `getJiraEnv`). */
+export const DEFAULT_JIRA_JQL =
+  "assignee = currentUser() AND resolution IS EMPTY ORDER BY updated DESC";
+
 export type JiraEnv = {
   site: string;
   email: string;
@@ -13,9 +17,7 @@ export function getJiraEnv(): JiraEnv | null {
   const email = (process.env.ATLASSIAN_EMAIL ?? "").trim();
   const token = (process.env.ATLASSIAN_API_TOKEN ?? "").trim();
   if (!site || !email || !token) return null;
-  const jql =
-    (process.env.JIRA_JQL ?? "").trim() ||
-    "assignee = currentUser() AND resolution IS EMPTY ORDER BY updated DESC";
+  const jql = (process.env.JIRA_JQL ?? "").trim() || DEFAULT_JIRA_JQL;
   return { site, email, token, jql };
 }
 

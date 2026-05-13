@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign up — Manager Daily</title>
+  <link rel="stylesheet" href="/style.css" />
+  <noscript>
+    <style>
+      .signup-wizard .signup-step[hidden] {
+        display: block !important;
+      }
+      .signup-wizard-ind {
+        display: none;
+      }
+    </style>
+  </noscript>
+</head>
+
+<body class="auth-page">
+  <header class="header header--auth">
+    <%- include('partials/site-header') %>
+  </header>
+
+  <main class="auth-main">
+    <section class="panel auth-card">
+      <h2>Create account</h2>
+      <ol class="signup-wizard-ind" aria-label="Sign-up steps">
+        <li class="signup-wizard-ind__item" data-wizard-indicator="1">Profile</li>
+        <li class="signup-wizard-ind__sep" aria-hidden="true">→</li>
+        <li class="signup-wizard-ind__item" data-wizard-indicator="2">Jira</li>
+      </ol>
+      <p class="hint auth-hint">Step 1: your name and login. Step 2: Jira Cloud URL, API token, and scrum board id
+        (from <code>…/jira/software/projects/…/boards/1577</code>). Your email is used as the Atlassian login for the
+        API. Password: at least 8&nbsp;characters with a letter and a number.</p>
+      <% if (errors && errors.length) { %>
+        <ul class="auth-errors" role="alert">
+          <% errors.forEach(function (e) { %>
+            <li><%= e %></li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <form method="post" action="/auth/signup" class="auth-form signup-wizard" data-initial-step="<%= wizardStep %>"
+        id="signup-form">
+        <div class="signup-step" data-wizard-step="1">
+          <fieldset class="signup-fieldset">
+            <legend class="signup-legend">Profile</legend>
+            <label class="auth-label" for="su-first">First name</label>
+            <input id="su-first" class="auth-input" type="text" name="firstName" autocomplete="given-name"
+              value="<%= formFirst %>" required maxlength="80" />
+
+            <label class="auth-label" for="su-last">Last name</label>
+            <input id="su-last" class="auth-input" type="text" name="lastName" autocomplete="family-name"
+              value="<%= formLast %>" required maxlength="80" />
+
+            <label class="auth-label" for="su-email">Email</label>
+            <input id="su-email" class="auth-input" type="email" name="email" autocomplete="email" value="<%= formEmail %>"
+              required maxlength="254" />
+
+            <label class="auth-label" for="su-password">Password</label>
+            <input id="su-password" class="auth-input" type="password" name="password" autocomplete="new-password"
+              required minlength="8" maxlength="128" />
+
+            <div class="signup-actions">
+              <button type="button" class="button-secondary" data-wizard-next>Continue to Manager Daily →</button>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="signup-step" data-wizard-step="2" hidden>
+          <fieldset class="signup-fieldset">
+            <legend class="signup-legend">Connect Jira</legend>
+            <p class="hint signup-step-hint">Creates or updates <code>.env</code> in the app folder with
+              <code>ATLASSIAN_*</code> and <code>JIRA_BOARD_ID</code>. Restart the server after sign-up so the new
+              values load.</p>
+
+            <label class="auth-label" for="su-site">Jira Cloud site URL</label>
+            <input id="su-site" class="auth-input" type="url" name="atlassianSite" placeholder="https://your-org.atlassian.net"
+              value="<%= formAtlassianSite %>" autocomplete="off" required />
+
+            <label class="auth-label" for="su-token">Atlassian API token</label>
+            <input id="su-token" class="auth-input" type="password" name="atlassianApiToken" autocomplete="off"
+              required minlength="20" maxlength="300"
+              placeholder="Create at id.atlassian.com → Security → API tokens" />
+
+            <label class="auth-label" for="su-board">Board number</label>
+            <input id="su-board" class="auth-input" type="number" name="jiraBoardId" inputmode="numeric" min="1"
+              step="1" value="<%= formJiraBoardId %>" required placeholder="e.g. 1577 from …/boards/1577" />
+
+            <div class="signup-actions signup-actions--split">
+              <button type="button" class="button-secondary" data-wizard-back>← Back</button>
+              <button type="submit">Create account</button>
+            </div>
+          </fieldset>
+        </div>
+      </form>
+      <p class="auth-foot">Already have an account? <a class="link" href="/login">Sign in</a></p>
+    </section>
+  </main>
+  <script src="/signup-wizard.js" defer></script>
+</body>
+
+</html>

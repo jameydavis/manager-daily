@@ -1,0 +1,22 @@
+<div class="header-row">
+  <div class="header-brand">
+    <h1 class="header-title"><a class="link header-home" href="/">Manager Daily</a></h1>
+    <% if (typeof monthLabel !== 'undefined' && monthLabel && typeof todayISO !== 'undefined' && todayISO) { %>
+      <p class="sub">
+        <%= monthLabel %> · <a class="link pill" href="/?date=<%= todayISO %>">Today: <%= todayISO %></a>
+      </p>
+    <% } %>
+  </div>
+  <nav class="header-auth" aria-label="Account">
+    <% if (currentUser) { %>
+      <span class="header-auth-name" title="<%= currentUser.email %>"><%= authUserDisplayLabel(currentUser) %></span>
+      <form method="post" action="/auth/logout" class="inline header-auth-out">
+        <button type="submit" class="secondary ghost">Sign out</button>
+      </form>
+    <% } else { %>
+      <a class="link" href="/login">Sign in</a>
+      <span class="header-auth-sep" aria-hidden="true">·</span>
+      <a class="link" href="/signup">Sign up</a>
+    <% } %>
+  </nav>
+</div>

@@ -1,10 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { randomBytes } from "node:crypto";
 import Database from "better-sqlite3";
-
-/** Repo root (folder with package.json), not process.cwd() — avoids writing to the wrong DB when the app is started from another directory. */
-const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+import { projectRoot } from "./projectRoot.js";
 
 function resolveDataDir(): string {
   const raw = process.env.DATA_DIR?.trim();
@@ -50,6 +48,144 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+    password_hash TEXT NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
+
+export type AuthUserRow = {
+  id: number;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+};
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export function createUser(
+  email: string,
+  passwordHash: string,
+  firstName: string | null,
+  lastName: string | null
+): number {
+  const e = normalizeEmail(email);
+  const fn = firstName?.trim() || null;
+  const ln = lastName?.trim() || null;
+  const r = db
+    .prepare(
+      `INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?)`
+    )
+    .run(e, passwordHash, fn, ln);
+  return Number(r.lastInsertRowid);
+}
+
+export function findUserWithHashByEmail(email: string): {
+  id: number;
+  email: string;
+  password_hash: string;
+  first_name: string | null;
+  last_name: string | null;
+} | null {
+  const e = normalizeEmail(email);
+  const row = db
+    .prepare(
+      `SELECT id, email, password_hash, first_name, last_name FROM users WHERE email = ?`
+    )
+    .get(e) as
+    | {
+        id: number;
+        email: string;
+        password_hash: string;
+        first_name: string | null;
+        last_name: string | null;
+      }
+    | undefined;
+  return row ?? null;
+}
+
+export function findAuthUserById(id: number): AuthUserRow | null {
+  const row = db
+    .prepare(`SELECT id, email, first_name, last_name FROM users WHERE id = ?`)
+    .get(id) as AuthUserRow | undefined;
+  return row ?? null;
+}
+
+const SESSION_BYTES = 32;
+
+export function createSession(userId: number, ttlSeconds: number): string {
+  purgeExpiredSessions();
+  const token = randomBytes(SESSION_BYTES).toString("hex");
+  const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
+  db.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`).run(
+    token,
+    userId,
+    exp
+  );
+  return token;
+}
+
+export function consumeAndValidateSession(token: string): AuthUserRow | null {
+  if (!token || token.length < SESSION_BYTES * 2) return null;
+  purgeExpiredSessions();
+  const row = db
+    .prepare(
+      `SELECT s.user_id, s.expires_at, u.id, u.email, u.first_name, u.last_name
+       FROM sessions s
+       JOIN users u ON u.id = s.user_id
+       WHERE s.token = ?`
+    )
+    .get(token) as
+    | {
+        user_id: number;
+        expires_at: number;
+        id: number;
+        email: string;
+        first_name: string | null;
+        last_name: string | null;
+      }
+    | undefined;
+  if (!row) return null;
+  if (row.expires_at <= Math.floor(Date.now() / 1000)) {
+    db.prepare(`DELETE FROM sessions WHERE token = ?`).run(token);
+    return null;
+  }
+  return {
+    id: row.id,
+    email: row.email,
+    first_name: row.first_name,
+    last_name: row.last_name,
+  };
+}
+
+export function deleteSession(token: string): void {
+  db.prepare(`DELETE FROM sessions WHERE token = ?`).run(token);
+}
+
+function purgeExpiredSessions(): void {
+  const now = Math.floor(Date.now() / 1000);
+  db.prepare(`DELETE FROM sessions WHERE expires_at <= ?`).run(now);
+}
 
 export type TaskRow = {
   id: number;

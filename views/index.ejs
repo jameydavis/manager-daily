@@ -12,11 +12,21 @@
 
 <body>
   <header class="header">
-    <h1>Manager Daily</h1>
-    <p class="sub">
-      <%= monthLabel %> · <a class="link pill" href="/?date=<%= todayISO %>">Today: <%= todayISO %></a>
-    </p>
+    <%- include('partials/site-header') %>
   </header>
+
+  <% if (typeof signUpEnvNote !== 'undefined' && signUpEnvNote) { %>
+    <div class="signup-env-banner" role="status">
+      <% if (typeof signupEnvWriteFailed !== 'undefined' && signupEnvWriteFailed) { %>
+        <p>Your account is ready, but <strong>we could not write <code>.env</code></strong>. Add
+          <code>ATLASSIAN_EMAIL</code>, <code>ATLASSIAN_API_TOKEN</code>, <code>ATLASSIAN_SITE</code>, and
+          <code>JIRA_BOARD_ID</code> manually, then restart the server.</p>
+      <% } else { %>
+        <p>Jira settings were saved to <code>.env</code>. <strong>Restart the app</strong> so the server loads the new
+          variables.</p>
+      <% } %>
+    </div>
+  <% } %>
 
   <main class="layout">
     <section class="panel calendar-panel">

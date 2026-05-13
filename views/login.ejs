@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in — Manager Daily</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+
+<body class="auth-page">
+  <header class="header header--auth">
+    <%- include('partials/site-header') %>
+  </header>
+
+  <main class="auth-main">
+    <section class="panel auth-card">
+      <h2>Sign in</h2>
+      <% if (errors && errors.length) { %>
+        <ul class="auth-errors" role="alert">
+          <% errors.forEach(function (e) { %>
+            <li><%= e %></li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <form method="post" action="/auth/login" class="auth-form">
+        <input type="hidden" name="redirect" value="<%= redirect %>" />
+        <label class="auth-label" for="login-email">Email</label>
+        <input id="login-email" class="auth-input" type="email" name="email" autocomplete="username"
+          value="<%= formEmail %>" required maxlength="254" />
+
+        <label class="auth-label" for="login-password">Password</label>
+        <input id="login-password" class="auth-input" type="password" name="password" autocomplete="current-password"
+          required minlength="1" />
+
+        <button type="submit">Sign in</button>
+      </form>
+      <p class="auth-foot">No account? <a class="link" href="/signup">Sign up</a></p>
+    </section>
+  </main>
+</body>
+
+</html>
