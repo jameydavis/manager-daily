@@ -19,6 +19,9 @@
       if (localStorage.getItem('managerDailyDeskPetEnabled') === '0') {
         document.documentElement.dataset.deskPet = 'off';
       }
+      if (localStorage.getItem('managerDailyTasksCompletedBottom') === '1') {
+        document.cookie = 'managerDailyTasksCompletedBottom=1; path=/; max-age=' + (86400 * 400) + '; SameSite=Lax';
+      }
     } catch (e) { /* ignore */ }
   </script>
   <header class="header">
@@ -129,7 +132,7 @@
               <li class="empty">No tasks for this day.</li>
               <% } %>
                 <% tasks.forEach(function (t) { %>
-                  <li class="task <%= t.done ? 'done' : '' %>">
+                  <li class="task <%= t.done ? 'done' : '' %>" data-sort-order="<%= t.sort_order %>" data-task-id="<%= t.id %>">
                     <form method="post" action="/tasks/<%= t.id %>/toggle" class="inline">
                       <input type="hidden" name="day" value="<%= selected %>" />
                       <button type="submit" class="check" aria-label="Toggle done">
@@ -138,7 +141,12 @@
                     </form>
                     <div class="task-body">
                       <span class="title">
-                        <%= t.title %>
+                        <% if (t.title === emailFollowUpTitle) { %>
+                          <span class="task-email-icon" aria-hidden="true" title="Created from email follow-up">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                          </span>
+                        <% } %>
+                        <span class="title-text"><%= t.title %></span>
                       </span>
                       <% if (t.notes) { %><span class="notes">
                           <%= t.notes %>

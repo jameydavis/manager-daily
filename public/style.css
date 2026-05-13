@@ -7,6 +7,10 @@
   --today: rgba(255, 200, 87, 0.25);
   --danger: #f87171;
   --border: #2a3545;
+  /* Mint green — complements cool blue accent, readable on dark panels */
+  --task-done: #5dd4a8;
+  --task-done-dim: rgba(93, 212, 168, 0.22);
+  --task-done-br: rgba(93, 212, 168, 0.5);
   --toast-info-br: rgba(110, 168, 254, 0.35);
   --toast-pet-br: rgba(180, 150, 255, 0.45);
   --toast-created-br: rgba(110, 220, 180, 0.5);
@@ -826,9 +830,27 @@ button.danger:hover {
   border-top: 1px solid var(--border);
 }
 
+.task.done .task-body,
+.task.done > form.inline:last-of-type {
+  opacity: 0.62;
+}
+
 .task.done .title {
   text-decoration: line-through;
   color: var(--muted);
+}
+
+.task.done .check {
+  color: var(--task-done);
+  background: var(--task-done-dim);
+  border-color: var(--task-done-br);
+  font-weight: 650;
+}
+
+.task.done .check:hover {
+  color: #6fe0bc;
+  border-color: rgba(111, 224, 188, 0.65);
+  background: rgba(93, 212, 168, 0.28);
 }
 
 .inline {
@@ -848,8 +870,32 @@ button.danger:hover {
 }
 
 .task-body .title {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-weight: 500;
+}
+
+.task-email-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--accent);
+  opacity: 0.92;
+  line-height: 0;
+}
+
+.task-email-icon svg {
+  display: block;
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.task.done .task-email-icon {
+  color: var(--muted);
+}
+
+.task-body .title-text {
+  min-width: 0;
 }
 
 .task-body .notes {

@@ -45,6 +45,31 @@ describe("buildApp HTTP", () => {
     expect(res.text).toMatch(/Manager Daily|calendar|task/i);
   });
 
+  it("GET / with completed-bottom cookie orders open tasks before done in HTML", async () => {
+    const { addTask, listTasks, toggleTask } = await import("./db.js");
+    const day = "2026-07-15";
+    addTask(day, "Done A", null);
+    addTask(day, "Todo B", null);
+    addTask(day, "Done C", null);
+    const rows = listTasks(day);
+    toggleTask(rows[0].id);
+    toggleTask(rows[2].id);
+
+    const res = await request(app)
+      .get("/")
+      .query({ date: day })
+      .set("Cookie", "managerDailyTasksCompletedBottom=1")
+      .expect(200);
+
+    const idxB = res.text.indexOf("Todo B");
+    const idxA = res.text.indexOf("Done A");
+    const idxC = res.text.indexOf("Done C");
+    expect(idxB).toBeGreaterThan(-1);
+    expect(idxA).toBeGreaterThan(-1);
+    expect(idxC).toBeGreaterThan(-1);
+    expect(idxB < idxA && idxA < idxC).toBe(true);
+  });
+
   it("POST /tasks adds a task and redirects with gamify params", async () => {
     const res = await request(app)
       .post("/tasks")

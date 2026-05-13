@@ -22,6 +22,7 @@ import {
   listTasks,
   normalizeEmail,
   toggleTask,
+  type TaskRow,
 } from "./db.js";
 import { DEFAULT_JIRA_JQL, getJiraEnv, searchIssues } from "./jira.js";
 import { mergeJiraCredentialsIntoDotenv } from "./dotenvMerge.js";
@@ -43,6 +44,20 @@ import { parseDirectReportNamesFromEnv, resolveDirectReports } from "./directRep
 import { enrichDirectReportsWithIssues } from "./reportAssigneeIssues.js";
 import { fetchImportantEmailMatches, importantEmailConfigured } from "./importantEmail.js";
 import { homeForDay, safeRedirectPath, withTaskRemovedFlash } from "./httpHelpers.js";
+
+/** Title for tasks created via the “Follow up from email” paste form. */
+export const EMAIL_FOLLOW_UP_TITLE = "Follow up from Email";
+
+/** Mirrored from `localStorage` in `public/user-settings.js` so the server can pre-order tasks. */
+export const TASKS_COMPLETED_BOTTOM_COOKIE = "managerDailyTasksCompletedBottom";
+
+export function sortTasksWithCompletedLast(rows: TaskRow[]): TaskRow[] {
+  return [...rows].sort((a, b) => {
+    if (a.done !== b.done) return a.done - b.done;
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+    return a.id - b.id;
+  });
+}
 
 export function buildApp(): express.Express {
   const app = express();
@@ -252,7 +267,10 @@ app.get("/", async (req, res, next) => {
     const year = d.getFullYear();
     const month = d.getMonth();
     const monthLabel = d.toLocaleString("en-US", { month: "long", year: "numeric" });
-    const tasks = listTasks(selected);
+    let tasks = listTasks(selected);
+    if (req.cookies?.[TASKS_COMPLETED_BOTTOM_COOKIE] === "1") {
+      tasks = sortTasksWithCompletedLast(tasks);
+    }
     const prevDay = prevCalendarDay(selected);
     const prevMonthStart = formatDay(new Date(year, month - 1, 1));
     const nextMonthStart = formatDay(new Date(year, month + 1, 1));
@@ -360,6 +378,7 @@ app.get("/", async (req, res, next) => {
       emailMatchError,
       signUpEnvNote,
       signupEnvWriteFailed,
+      emailFollowUpTitle: EMAIL_FOLLOW_UP_TITLE,
     });
   } catch (e) {
     next(e);
@@ -432,8 +451,6 @@ app.post("/carry-over", (req, res) => {
   if (from) created = carryOverIncomplete(from, day.data);
   res.redirect(homeForDay(day.data, created > 0 ? { create: created } : undefined));
 });
-
-const EMAIL_FOLLOW_UP_TITLE = "Follow up from Email";
 
 app.post("/tasks/from-email-paste", (req, res) => {
   const day = dayParam.safeParse(req.body.day);
