@@ -38,8 +38,14 @@ describe("db", () => {
     db.addTask("2026-04-02", "Toggle me", null);
     const [row] = db.listTasks("2026-04-02");
     expect(row.done).toBe(0);
+    expect(db.getTaskDone(row.id)).toBe(0);
     db.toggleTask(row.id);
     expect(db.listTasks("2026-04-02")[0].done).toBe(1);
+    expect(db.getTaskDone(row.id)).toBe(1);
+  });
+
+  it("getTaskDone returns null for missing id", () => {
+    expect(db.getTaskDone(99999)).toBeNull();
   });
 
   it("deleteTask removes row", () => {

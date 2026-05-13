@@ -8,6 +8,7 @@ import {
   carryOverIncomplete,
   deleteTask,
   dismissEmailSuggestion,
+  getTaskDone,
   listDismissedEmailFingerprints,
   listTasks,
   toggleTask,
@@ -40,6 +41,28 @@ app.use(express.static(path.join(process.cwd(), "public")));
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const fingerprintParam = z.string().trim().min(1).max(500);
+
+const MAX_DESK_PET_QUEUE = 50;
+
+/** Build `/?date=…` with optional desk-buddy gamify query params (stripped client-side after use). */
+function homeForDay(day: string, deskPet?: { create?: number; complete?: number }): string {
+  const u = new URL("http://_/");
+  u.pathname = "/";
+  u.searchParams.set("date", day);
+  if (deskPet?.create != null && deskPet.create > 0) {
+    u.searchParams.set(
+      "deskPetCreate",
+      String(Math.min(MAX_DESK_PET_QUEUE, Math.floor(deskPet.create)))
+    );
+  }
+  if (deskPet?.complete != null && deskPet.complete > 0) {
+    u.searchParams.set(
+      "deskPetComplete",
+      String(Math.min(MAX_DESK_PET_QUEUE, Math.floor(deskPet.complete)))
+    );
+  }
+  return `${u.pathname}${u.search}`;
+}
 
 app.get("/", async (req, res, next) => {
   try {
@@ -175,12 +198,22 @@ app.post("/tasks", (req, res) => {
     return;
   }
   addTask(day.data, title, notes || null);
-  res.redirect(`/?date=${encodeURIComponent(day.data)}`);
+  res.redirect(homeForDay(day.data, { create: 1 }));
 });
 
 app.post("/tasks/:id/toggle", (req, res) => {
   const id = Number(req.params.id);
-  if (Number.isFinite(id)) toggleTask(id);
+  const day = dayParam.safeParse(req.body.day);
+  let completedTask = false;
+  if (Number.isFinite(id)) {
+    const before = getTaskDone(id);
+    toggleTask(id);
+    if (before === 0) completedTask = true;
+  }
+  if (day.success) {
+    res.redirect(homeForDay(day.data, completedTask ? { complete: 1 } : undefined));
+    return;
+  }
   res.redirect(req.get("referer") || "/");
 });
 
@@ -197,8 +230,9 @@ app.post("/carry-over", (req, res) => {
     return;
   }
   const from = prevCalendarDay(day.data);
-  if (from) carryOverIncomplete(from, day.data);
-  res.redirect(`/?date=${encodeURIComponent(day.data)}`);
+  let created = 0;
+  if (from) created = carryOverIncomplete(from, day.data);
+  res.redirect(homeForDay(day.data, created > 0 ? { create: created } : undefined));
 });
 
 const EMAIL_FOLLOW_UP_TITLE = "Follow up from Email";
@@ -211,7 +245,7 @@ app.post("/tasks/from-email-paste", (req, res) => {
     return;
   }
   addTask(day.data, EMAIL_FOLLOW_UP_TITLE, pasted);
-  res.redirect(`/?date=${encodeURIComponent(day.data)}`);
+  res.redirect(homeForDay(day.data, { create: 1 }));
 });
 
 app.post("/tasks/from-jira", (req, res) => {
@@ -226,7 +260,7 @@ app.post("/tasks/from-jira", (req, res) => {
   const notes = site ? `${site}/browse/${key}` : `Jira ${key}`;
   const title = summary ? `${key}: ${summary}` : key;
   addTask(day.data, title, notes);
-  res.redirect(`/?date=${encodeURIComponent(day.data)}`);
+  res.redirect(homeForDay(day.data, { create: 1 }));
 });
 
 app.post("/tasks/from-email", (req, res) => {
@@ -240,7 +274,7 @@ app.post("/tasks/from-email", (req, res) => {
   }
   addTask(day.data, title, notes || null);
   dismissEmailSuggestion(fp.data);
-  res.redirect(`/?date=${encodeURIComponent(day.data)}`);
+  res.redirect(homeForDay(day.data, { create: 1 }));
 });
 
 app.post("/email-suggestions/dismiss", (req, res) => {

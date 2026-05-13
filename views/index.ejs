@@ -7,6 +7,7 @@
   <title>Manager Daily — <%= selected %>
   </title>
   <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/desk-pet-palettes.css" />
 </head>
 
 <body>
@@ -110,6 +111,7 @@
                 <% tasks.forEach(function (t) { %>
                   <li class="task <%= t.done ? 'done' : '' %>">
                     <form method="post" action="/tasks/<%= t.id %>/toggle" class="inline">
+                      <input type="hidden" name="day" value="<%= selected %>" />
                       <button type="submit" class="check" aria-label="Toggle done">
                         <%= t.done ? '✓' : '○' %>
                       </button>
@@ -262,7 +264,21 @@
     </section>
   </main>
 
-  <aside id="desk-pet" class="desk-pet" aria-label="Desk pet">
+  <aside id="desk-pet" class="desk-pet desk-pet--corner-br" aria-label="Desk buddy">
+    <button
+      type="button"
+      class="desk-pet-gear"
+      id="desk-pet-settings-open"
+      aria-haspopup="dialog"
+      aria-controls="desk-pet-settings"
+      aria-label="Desk buddy settings"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path
+          d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.52-.4-1.08-.73-1.69-.98l-.36-2.54A.484.484 0 0 0 14 2h-3.92c-.24 0-.45.18-.49.42l-.36 2.54c-.61.25-1.17.59-1.69.98l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.3.59.22l2.39-.96c.52.4 1.08.73 1.69.98l.36 2.54c.05.24.25.42.49.42H14c.24 0 .44-.18.49-.42l.36-2.54c.61-.25 1.17-.59 1.69-.98l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5z"
+        />
+      </svg>
+    </button>
     <div id="desk-pet-alive" class="desk-pet-panel desk-pet-panel--alive">
       <div class="desk-pet-header desk-pet-header--toolbar">
         <span class="desk-pet-title">Desk buddy</span>
@@ -323,10 +339,58 @@
       <div id="desk-pet-revive-expand" class="desk-pet-expandable desk-pet-revive-expandable">
         <p class="desk-pet-revive-title">Your desk buddy nodded off…</p>
         <p class="desk-pet-revive-hint">They went too long without a meal. Wake them with a little care.</p>
-        <button type="button" class="desk-pet-revive-btn" id="desk-pet-revive">Revive buddy</button>
       </div>
     </div>
+    <dialog id="desk-pet-settings" class="desk-pet-settings" aria-labelledby="desk-pet-settings-title">
+      <div class="desk-pet-settings-card">
+        <div class="desk-pet-settings-head">
+          <h2 id="desk-pet-settings-title" class="desk-pet-settings-title">Desk buddy settings</h2>
+          <button type="button" class="desk-pet-settings-close" id="desk-pet-settings-close" aria-label="Close settings">
+            ×
+          </button>
+        </div>
+        <div class="desk-pet-settings-body">
+          <label class="desk-pet-settings-label" for="desk-pet-name">Name</label>
+          <div class="desk-pet-settings-name-row">
+            <input
+              type="text"
+              id="desk-pet-name"
+              class="desk-pet-settings-input desk-pet-settings-input--name"
+              placeholder="Desk buddy"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" class="secondary desk-pet-name-random" id="desk-pet-name-random" aria-label="Pick a random name">
+              Randomize
+            </button>
+          </div>
+          <p id="desk-pet-name-hint" class="desk-pet-settings-hint" aria-live="polite"></p>
+          <label class="desk-pet-settings-label desk-pet-settings-label--after" for="desk-pet-corner">Corner on screen</label>
+          <select id="desk-pet-corner" class="desk-pet-settings-select" autocomplete="off">
+            <option value="br">Bottom right</option>
+            <option value="bl">Bottom left</option>
+            <option value="tr">Top right</option>
+            <option value="tl">Top left</option>
+          </select>
+          <label class="desk-pet-settings-label desk-pet-settings-label--after" for="desk-pet-palette">Pet color</label>
+          <select id="desk-pet-palette" class="desk-pet-settings-select" autocomplete="off">
+            <option value="lavender">Lavender (default)</option>
+            <option value="ocean">Ocean</option>
+            <option value="meadow">Meadow</option>
+            <option value="sunset">Sunset</option>
+            <option value="berry">Berry</option>
+            <option value="honey">Honey</option>
+            <option value="arctic">Arctic</option>
+            <option value="charcoal">Charcoal</option>
+          </select>
+        </div>
+        <div class="desk-pet-settings-foot">
+          <button type="button" class="secondary" id="desk-pet-settings-done">Done</button>
+        </div>
+      </div>
+    </dialog>
   </aside>
+  <script src="/toasts.js" defer></script>
   <script src="/desk-pet.js" defer></script>
 </body>
 

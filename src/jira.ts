@@ -15,7 +15,7 @@ export function getJiraEnv(): JiraEnv | null {
   if (!site || !email || !token) return null;
   const jql =
     (process.env.JIRA_JQL ?? "").trim() ||
-    "assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC";
+    "assignee = currentUser() AND resolution IS EMPTY ORDER BY updated DESC";
   return { site, email, token, jql };
 }
 

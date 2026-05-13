@@ -80,6 +80,14 @@ export function addTask(day: string, title: string, notes: string | null): void 
   ).run(day, title.trim(), notes?.trim() || null, max);
 }
 
+/** Current `done` flag (0 or 1), or `null` if no row. */
+export function getTaskDone(id: number): number | null {
+  if (!Number.isFinite(id)) return null;
+  const row = db.prepare(`SELECT done FROM tasks WHERE id = ?`).get(id) as { done: number } | undefined;
+  if (!row) return null;
+  return row.done;
+}
+
 export function toggleTask(id: number): void {
   db.prepare(`UPDATE tasks SET done = CASE WHEN done = 1 THEN 0 ELSE 1 END WHERE id = ?`).run(
     id

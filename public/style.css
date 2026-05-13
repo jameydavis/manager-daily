@@ -21,6 +21,121 @@ body {
   line-height: 1.5;
 }
 
+/* --- Toasts (app-wide) --- */
+.toast-stack {
+  position: fixed;
+  z-index: 120;
+  left: 1rem;
+  right: auto;
+  bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: stretch;
+  width: min(20rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+/* Pet in lower-left: keep toasts on the opposite side (lower-right). */
+.toast-stack.toast-stack--anchor-right {
+  left: auto;
+  right: 1rem;
+}
+
+.toast-stack .toast {
+  pointer-events: auto;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 0.55rem 0.45rem 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
+  animation: toast-in 0.28s ease-out;
+}
+
+.toast--success {
+  border-color: rgba(110, 168, 254, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(110, 168, 254, 0.12) inset,
+    0 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+.toast--warning {
+  border-color: rgba(255, 200, 87, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(255, 200, 87, 0.1) inset,
+    0 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+.toast-inner {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+
+.toast-body {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.toast-dismiss {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.1rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.toast-dismiss:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.toast--out {
+  animation: toast-out 0.22s ease-in forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 .header {
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border);
@@ -607,10 +722,227 @@ a.report-name:hover {
 .desk-pet {
   position: fixed;
   z-index: 50;
-  bottom: 1rem;
-  right: 1rem;
   max-width: calc(100vw - 2rem);
   pointer-events: none;
+}
+
+.desk-pet--corner-br {
+  bottom: 1rem;
+  right: 1rem;
+  top: auto;
+  left: auto;
+}
+
+.desk-pet--corner-bl {
+  bottom: 1rem;
+  left: 1rem;
+  right: auto;
+  top: auto;
+}
+
+.desk-pet--corner-tr {
+  top: 1rem;
+  right: 1rem;
+  bottom: auto;
+  left: auto;
+}
+
+.desk-pet--corner-tl {
+  top: 1rem;
+  left: 1rem;
+  bottom: auto;
+  right: auto;
+}
+
+.desk-pet-gear {
+  position: absolute;
+  z-index: 5;
+  top: 0.62rem;
+  left: 0.62rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.72rem;
+  height: 1.72rem;
+  padding: 0;
+  margin: 0;
+  pointer-events: auto;
+  border-radius: 9px;
+  border: 1px solid var(--pet-gear-br);
+  background: var(--pet-gear-bg);
+  color: var(--pet-gear-fg);
+  cursor: pointer;
+  font: inherit;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+.desk-pet-gear:hover {
+  color: var(--pet-gear-fg-h);
+  border-color: var(--pet-gear-br-h);
+  background: var(--pet-gear-bg-h);
+}
+
+.desk-pet-gear:focus-visible {
+  outline: 2px solid var(--pet-gear-focus);
+  outline-offset: 2px;
+}
+
+.desk-pet-settings {
+  box-sizing: border-box;
+  margin: auto;
+  padding: 0;
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  pointer-events: auto;
+}
+
+.desk-pet-settings::backdrop {
+  background: rgba(4, 6, 10, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.desk-pet-settings-card {
+  padding: 1rem 1.15rem 1.05rem;
+  border-radius: 14px;
+  border: 1px solid var(--pet-set-card-br);
+  /* Solid base so the panel stays opaque even if gradient layers fail */
+  background-color: var(--pet-set-3);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 10% -10%, var(--pet-set-rad) 0%, transparent 45%),
+    linear-gradient(168deg, var(--pet-set-1) 0%, var(--pet-set-2) 45%, var(--pet-set-3) 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 18px 48px rgba(0, 0, 0, 0.55);
+}
+
+.desk-pet-settings-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.desk-pet-settings-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.desk-pet-settings-close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  margin: -0.2rem -0.15rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.desk-pet-settings-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.desk-pet-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.desk-pet-settings-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--pet-set-label);
+}
+
+.desk-pet-settings-select {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(12, 14, 22, 0.94);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.desk-pet-settings-name-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.desk-pet-settings-input--name {
+  flex: 1;
+  min-width: 0;
+}
+
+.desk-pet-name-random {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding-left: 0.55rem !important;
+  padding-right: 0.55rem !important;
+  font-size: 0.82rem !important;
+}
+
+.desk-pet-settings-hint {
+  margin: 0.15rem 0 0;
+  min-height: 1.25rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--pet-set-hint);
+}
+
+.desk-pet-settings-hint--limit {
+  color: var(--pet-set-hint-limit);
+  font-weight: 600;
+}
+
+.desk-pet-settings-hint--error {
+  color: #f0a8a8;
+  font-weight: 600;
+}
+
+.desk-pet-settings-label--after {
+  margin-top: 0.65rem;
+}
+
+.desk-pet-settings-input {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(12, 14, 22, 0.94);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.desk-pet-settings-input--invalid {
+  border-color: rgba(248, 113, 113, 0.75) !important;
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.2);
+}
+
+.desk-pet-settings-input::placeholder {
+  color: var(--muted);
+}
+
+.desk-pet-settings-foot {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .desk-pet-panel {
@@ -619,18 +951,18 @@ a.report-name:hover {
   width: 12rem;
   padding: 0.68rem 0.75rem 0.78rem;
   border-radius: 17px 20px 22px 16px / 19px 17px 18px 21px;
-  border: 1px solid rgba(232, 176, 255, 0.42);
+  border: 1px solid var(--pet-panel-border);
   background:
-    radial-gradient(ellipse 130% 90% at 8% -5%, rgba(255, 200, 230, 0.2) 0%, transparent 50%),
-    radial-gradient(ellipse 100% 80% at 102% 8%, rgba(180, 150, 255, 0.18) 0%, transparent 48%),
-    radial-gradient(ellipse 70% 55% at 50% 118%, rgba(255, 140, 200, 0.08) 0%, transparent 45%),
-    linear-gradient(168deg, #2d2238 0%, #221c32 38%, #171a2c 100%);
+    radial-gradient(ellipse 130% 90% at 8% -5%, var(--pet-rad-1) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 80% at 102% 8%, var(--pet-rad-2) 0%, transparent 48%),
+    radial-gradient(ellipse 70% 55% at 50% 118%, var(--pet-rad-3) 0%, transparent 45%),
+    linear-gradient(168deg, var(--pet-surface-1) 0%, var(--pet-surface-2) 38%, var(--pet-surface-3) 100%);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.07) inset,
     0 10px 36px rgba(0, 0, 0, 0.48),
-    0 0 0 1px rgba(120, 80, 160, 0.25),
-    0 0 40px rgba(200, 130, 255, 0.28),
-    0 0 56px rgba(255, 120, 190, 0.14);
+    0 0 0 1px var(--pet-glow-line),
+    0 0 40px var(--pet-glow-soft),
+    0 0 56px var(--pet-glow-pink);
 }
 
 .desk-pet-panel > * {
@@ -647,16 +979,31 @@ a.report-name:hover {
 }
 
 .desk-pet-header--toolbar {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.45rem;
+  justify-content: center;
   margin-bottom: 0.4rem;
+  padding-left: 2.2rem;
+  padding-right: 2.45rem;
+  min-height: 1.9rem;
 }
 
 .desk-pet-header--toolbar .desk-pet-title {
+  margin: 0 auto;
+  text-align: center;
   min-width: 0;
-  flex: 1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desk-pet-header--toolbar .desk-pet-collapse-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .desk-pet-collapse-toggle {
@@ -677,16 +1024,16 @@ a.report-name:hover {
   padding: 0.05rem 0.1rem 0.35rem;
   font-size: 0.84rem;
   font-weight: 650;
-  color: #f2ebff;
+  color: var(--pet-compact);
   flex-wrap: wrap;
 }
 
 .desk-pet-revive-compact-sep {
-  color: rgba(220, 200, 250, 0.55);
+  color: var(--pet-rev-sep);
 }
 
 .desk-pet-revive-compact-need {
-  color: #ffc9e8;
+  color: var(--pet-rev-need);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -697,15 +1044,15 @@ a.report-name:hover {
   font-size: 0.72rem;
   font-weight: 650;
   border-radius: 8px;
-  border: 1px solid rgba(255, 200, 230, 0.5);
-  background: rgba(80, 45, 110, 0.55);
-  color: #fff5fc;
+  border: 1px solid var(--pet-rev-btn-br);
+  background: var(--pet-rev-btn-bg);
+  color: var(--pet-rev-btn-fg);
   cursor: pointer;
   font-family: inherit;
 }
 
 .desk-pet-revive-inline:hover {
-  background: rgba(110, 60, 140, 0.65);
+  background: var(--pet-rev-btn-bg-h);
 }
 
 .desk-pet--compact .desk-pet-panel {
@@ -717,6 +1064,9 @@ a.report-name:hover {
 
 .desk-pet--compact .desk-pet-header--toolbar {
   margin-bottom: 0.12rem;
+  padding-left: 1.85rem;
+  padding-right: 2.15rem;
+  min-height: 1.55rem;
 }
 
 .desk-pet--compact .desk-pet-title {
@@ -734,7 +1084,7 @@ a.report-name:hover {
   font-weight: 650;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #d4b8f0;
+  color: var(--pet-title);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
@@ -758,11 +1108,11 @@ a.report-name:hover {
   position: absolute;
   left: 50%;
   bottom: 22%;
-  color: #ff7eb3;
+  color: var(--pet-heart);
   line-height: 1;
   text-shadow:
-    0 0 8px rgba(255, 140, 200, 0.95),
-    0 1px 2px rgba(120, 40, 90, 0.35);
+    0 0 8px var(--pet-heart-g1),
+    0 1px 2px var(--pet-heart-g2);
   opacity: 0;
   will-change: transform, opacity;
   animation: desk-pet-heart-rise 1.5s ease-out var(--heart-delay, 0s) forwards;
@@ -798,14 +1148,14 @@ a.report-name:hover {
   height: 3.65rem;
   border-radius: 50% 50% 48% 48% / 58% 58% 42% 42%;
   background:
-    radial-gradient(ellipse 55% 40% at 50% 18%, rgba(255, 255, 255, 0.55) 0%, transparent 55%),
-    radial-gradient(circle at 22% 35%, rgba(255, 214, 236, 0.9) 0%, transparent 42%),
-    radial-gradient(circle at 82% 38%, rgba(255, 236, 210, 0.75) 0%, transparent 38%),
-    linear-gradient(160deg, #ffc8e0 0%, #e8a8f0 38%, #b894f0 78%, #8b6fd4 100%);
+    radial-gradient(ellipse 55% 40% at 50% 18%, var(--pet-body-hi) 0%, transparent 55%),
+    radial-gradient(circle at 22% 35%, var(--pet-body-r1) 0%, transparent 42%),
+    radial-gradient(circle at 82% 38%, var(--pet-body-r2) 0%, transparent 38%),
+    linear-gradient(160deg, var(--pet-body-a) 0%, var(--pet-body-b) 38%, var(--pet-body-c) 78%, var(--pet-body-d) 100%);
   box-shadow:
-    0 3px 10px rgba(80, 40, 120, 0.35),
-    inset -3px -5px 12px rgba(120, 60, 140, 0.28),
-    inset 4px 5px 14px rgba(255, 255, 255, 0.45);
+    0 3px 10px var(--pet-body-sh1),
+    inset -3px -5px 12px var(--pet-body-sh2),
+    inset 4px 5px 14px var(--pet-body-sh3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -949,7 +1299,7 @@ a.report-name:hover {
   width: 1.05rem;
   height: 1.05rem;
   border-radius: 55% 45% 60% 40%;
-  background: linear-gradient(135deg, #f0b8e8 0%, #c896ee 100%);
+  background: linear-gradient(135deg, var(--pet-ear-a) 0%, var(--pet-ear-b) 100%);
   box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.45);
   z-index: 0;
 }
@@ -971,7 +1321,7 @@ a.report-name:hover {
   width: 0.65rem;
   height: 0.38rem;
   border-radius: 50%;
-  background: rgba(255, 120, 160, 0.35);
+  background: var(--pet-blush);
   top: 52%;
   z-index: 1;
   pointer-events: none;
@@ -1075,7 +1425,7 @@ a.report-name:hover {
   height: 0.32rem;
   margin-top: 0.02rem;
   box-sizing: border-box;
-  border: 2px solid rgba(90, 50, 85, 0.88);
+  border: 2px solid var(--pet-mouth);
   border-top: none;
   border-radius: 0 0 50% 50% / 0 0 100% 100%;
   background: transparent;
@@ -1089,7 +1439,7 @@ a.report-name:hover {
   height: 0.12rem;
   border: none;
   border-radius: 2px;
-  background: rgba(90, 50, 85, 0.65);
+  background: var(--pet-mouth-h);
   margin-top: 0.12rem;
 }
 
@@ -1133,10 +1483,10 @@ a.report-name:hover {
   width: 0.44rem;
   height: 0.4rem;
   margin-top: 0.06rem;
-  border: 2px solid rgba(90, 50, 85, 0.78);
+  border: 2px solid var(--pet-mouth-full-br);
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 55%, rgba(255, 200, 220, 0.35) 0%, rgba(70, 45, 72, 0.2) 62%);
-  box-shadow: inset 0 -2px 3px rgba(90, 50, 85, 0.15);
+  background: radial-gradient(circle at 50% 55%, var(--pet-mouth-full-g1) 0%, var(--pet-mouth-full-g2) 62%);
+  box-shadow: inset 0 -2px 3px var(--pet-mouth-full-sh);
 }
 
 .desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(
@@ -1151,10 +1501,10 @@ a.report-name:hover {
 .desk-pet-creature--tickle .desk-pet-mouth {
   width: 0.95rem;
   height: 0.48rem;
-  border: 2.5px solid rgba(90, 50, 85, 0.9);
+  border: 2.5px solid var(--pet-mouth-tickle-br);
   border-top: none;
   border-radius: 0 0 50% 50% / 0 0 100% 100%;
-  background: rgba(80, 45, 75, 0.12);
+  background: var(--pet-mouth-tickle-fill);
   animation: desk-pet-mouth-laugh 1s ease;
 }
 
@@ -1191,7 +1541,7 @@ a.report-name:hover {
     border-radius: 0 0 50% 50% / 0 0 100% 100%;
     background: transparent;
     box-shadow: none;
-    border: 2px solid rgba(90, 50, 85, 0.88);
+    border: 2px solid var(--pet-mouth);
     border-top: none;
   }
 
@@ -1199,7 +1549,7 @@ a.report-name:hover {
     width: 0.55rem;
     height: 0.42rem;
     border-radius: 50%;
-    background: radial-gradient(circle at 50% 65%, #ff9ec4 0%, #5c3a52 42%);
+    background: radial-gradient(circle at 50% 65%, var(--pet-mouth-inner-pink) 0%, var(--pet-mouth-inner-dark) 42%);
     box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15);
     border: none;
   }
@@ -1208,7 +1558,7 @@ a.report-name:hover {
     width: 0.5rem;
     height: 0.14rem;
     border-radius: 4px;
-    background: rgba(90, 50, 85, 0.75);
+    background: var(--pet-mouth-h);
     box-shadow: none;
     border: none;
   }
@@ -1217,7 +1567,7 @@ a.report-name:hover {
     width: 0.58rem;
     height: 0.46rem;
     border-radius: 50%;
-    background: radial-gradient(circle at 50% 62%, #ff9ec4 0%, #5c3a52 40%);
+    background: radial-gradient(circle at 50% 62%, var(--pet-mouth-inner-pink) 0%, var(--pet-mouth-inner-dark) 40%);
     box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.12);
     border: none;
   }
@@ -1226,7 +1576,7 @@ a.report-name:hover {
     width: 0.48rem;
     height: 0.16rem;
     border-radius: 3px;
-    background: rgba(90, 50, 85, 0.78);
+    background: var(--pet-mouth-h);
     border: none;
   }
 
@@ -1234,7 +1584,7 @@ a.report-name:hover {
     width: 0.6rem;
     height: 0.44rem;
     border-radius: 50%;
-    background: radial-gradient(circle at 50% 65%, #ff9ec4 0%, #5c3a52 42%);
+    background: radial-gradient(circle at 50% 65%, var(--pet-mouth-inner-pink) 0%, var(--pet-mouth-inner-dark) 42%);
     border: none;
   }
 
@@ -1242,7 +1592,7 @@ a.report-name:hover {
     width: 0.46rem;
     height: 0.15rem;
     border-radius: 3px;
-    background: rgba(90, 50, 85, 0.72);
+    background: var(--pet-mouth-h);
     border: none;
   }
 
@@ -1250,7 +1600,7 @@ a.report-name:hover {
     width: 0.52rem;
     height: 0.38rem;
     border-radius: 50%;
-    background: radial-gradient(circle at 50% 68%, #ffb8d4 0%, #5c3a52 38%);
+    background: radial-gradient(circle at 50% 68%, var(--pet-mouth-inner-pink) 0%, var(--pet-mouth-inner-dark) 38%);
     border: none;
   }
 
@@ -1258,8 +1608,8 @@ a.report-name:hover {
     width: 0.62rem;
     height: 0.26rem;
     border-radius: 0 0 45% 45% / 0 0 90% 90%;
-    background: rgba(80, 45, 75, 0.15);
-    border: 2px solid rgba(90, 50, 85, 0.85);
+    background: var(--pet-mouth-tickle-fill);
+    border: 2px solid var(--pet-mouth);
     border-top: none;
     box-shadow: none;
   }
@@ -1269,7 +1619,7 @@ a.report-name:hover {
     height: 0.32rem;
     border-radius: 0 0 50% 50% / 0 0 100% 100%;
     background: transparent;
-    border: 2px solid rgba(90, 50, 85, 0.88);
+    border: 2px solid var(--pet-mouth);
     border-top: none;
     box-shadow: none;
   }
@@ -1500,7 +1850,7 @@ a.report-name:hover {
   top: 50%;
   width: 0.5rem;
   height: 2.5px;
-  background: rgba(92, 52, 88, 0.96);
+  background: var(--pet-refuse-x);
   border-radius: 1px;
 }
 
@@ -1517,7 +1867,7 @@ a.report-name:hover {
   min-height: 2.6em;
   font-size: 0.78rem;
   line-height: 1.35;
-  color: #f2ebff;
+  color: var(--pet-status);
   text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
@@ -1525,8 +1875,8 @@ a.report-name:hover {
 .desk-pet-meter {
   height: 5px;
   border-radius: 999px;
-  background: rgba(20, 14, 32, 0.65);
-  border: 1px solid rgba(255, 200, 230, 0.14);
+  background: var(--pet-meter-bg);
+  border: 1px solid var(--pet-meter-br);
   overflow: hidden;
   margin-bottom: 0.45rem;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
@@ -1537,9 +1887,9 @@ a.report-name:hover {
   height: 100%;
   width: 50%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #ff8ec8, #e8a0ff 55%, #b8a0ff);
+  background: linear-gradient(90deg, var(--pet-meter-fill-1), var(--pet-meter-fill-2) 55%, var(--pet-meter-fill-3));
   transition: width 0.35s ease;
-  box-shadow: 0 0 10px rgba(255, 160, 220, 0.45);
+  box-shadow: 0 0 10px var(--pet-meter-glow);
 }
 
 .desk-pet-actions {
@@ -1556,14 +1906,14 @@ a.report-name:hover {
 }
 
 .desk-pet-actions button.secondary {
-  border-color: rgba(220, 180, 255, 0.45);
-  background: rgba(38, 28, 56, 0.65);
-  color: #ebe4ff;
+  border-color: var(--pet-action-br);
+  background: var(--pet-action-bg);
+  color: var(--pet-action-fg);
 }
 
 .desk-pet-actions button.secondary:hover {
-  border-color: rgba(255, 200, 230, 0.55);
-  background: rgba(52, 38, 72, 0.75);
+  border-color: var(--pet-action-br-h);
+  background: var(--pet-action-bg-h);
   color: #fff;
 }
 
@@ -1585,27 +1935,7 @@ a.report-name:hover {
   margin: 0;
   font-size: 0.78rem;
   line-height: 1.45;
-  color: #b9a8d4;
-}
-
-.desk-pet-revive-btn {
-  width: 100%;
-  margin-top: 0.1rem;
-  padding: 0.48rem 0.65rem;
-  font-size: 0.85rem;
-  font-weight: 650;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 190, 240, 0.45);
-  background: linear-gradient(165deg, #ffb8e8 0%, #d898ff 55%, #9b7cf0 100%);
-  color: #1a1224;
-  cursor: pointer;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.35) inset,
-    0 4px 14px rgba(200, 100, 200, 0.35);
-}
-
-.desk-pet-revive-btn:hover {
-  filter: brightness(1.06) saturate(1.05);
+  color: var(--pet-rev-hint);
 }
 
 @keyframes desk-pet-panel-wobble-cute {
@@ -1621,13 +1951,13 @@ a.report-name:hover {
 
 .desk-pet-panel--alert-cute {
   animation: desk-pet-panel-wobble-cute 2.8s ease-in-out infinite;
-  border-color: rgba(255, 200, 230, 0.65) !important;
+  border-color: var(--pet-alert-cute-br) !important;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.08) inset,
     0 10px 36px rgba(0, 0, 0, 0.48),
-    0 0 0 1px rgba(255, 186, 230, 0.55),
-    0 0 36px rgba(255, 160, 210, 0.35),
-    0 0 52px rgba(255, 140, 200, 0.2) !important;
+    0 0 0 1px var(--pet-alert-cute-g1),
+    0 0 36px var(--pet-alert-cute-g2),
+    0 0 52px var(--pet-alert-cute-g3) !important;
 }
 
 @keyframes desk-pet-panel-shake-urgent {

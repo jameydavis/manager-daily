@@ -27,7 +27,6 @@
   const meterFill = document.getElementById("desk-pet-meter-fill");
   const btnFeed = document.getElementById("desk-pet-feed");
   const btnTickle = document.getElementById("desk-pet-tickle");
-  const btnRevive = document.getElementById("desk-pet-revive");
   const fxLayer = document.getElementById("desk-pet-fx");
   const aliveExpand = document.getElementById("desk-pet-alive-expand");
   const aliveCompact = document.getElementById("desk-pet-alive-compact");
@@ -46,7 +45,6 @@
     !meterFill ||
     !btnFeed ||
     !btnTickle ||
-    !btnRevive ||
     !aliveExpand ||
     !aliveCompact ||
     !aliveCompactPct ||
@@ -58,6 +56,115 @@
     return;
   }
 
+  const PET_NAME_KEY = "managerDailyDeskPetDisplayName";
+  const DEFAULT_PET_NAME = "Desk buddy";
+  const MAX_PET_NAME_LEN = 12;
+
+  /** Short cute names (≤12 chars) for Randomize — no network. */
+  const CUTE_PET_NAMES = [
+    "Pebbles",
+    "Mochi",
+    "Biscuit",
+    "Noodle",
+    "Sprout",
+    "Jellybean",
+    "Pip",
+    "Tofu",
+    "Muffin",
+    "Waffles",
+    "Pudding",
+    "Snickers",
+    "Hazel",
+    "Mimi",
+    "Bubbles",
+    "Twinkle",
+    "Clover",
+    "Luna",
+    "Sunny",
+    "Ziggy",
+    "Fizz",
+    "Puff",
+    "Nibbles",
+    "Gizmo",
+    "Tinker",
+    "Olive",
+    "Maple",
+    "Honey",
+    "Butter",
+    "Pickle",
+    "Coco",
+    "Pixel",
+    "Bean",
+    "Chip",
+    "Cinnamon",
+    "Truffle",
+    "Nori",
+    "Miso",
+    "Wonton",
+    "Dumpling",
+    "Peaches",
+    "Apricot",
+    "Cherry",
+    "Sprocket",
+    "Button",
+    "Patches",
+    "Mittens",
+    "Sprinkles",
+    "Tootsie",
+    "Bonbon",
+    "Marzipan",
+    "Shortcake",
+    "Bluebell",
+    "Buttercup",
+    "Dandelion",
+    "Firefly",
+    "Stardust",
+    "Moonbeam",
+    "Tumbleweed",
+  ];
+
+  function loadStoredPetName() {
+    try {
+      const raw = localStorage.getItem(PET_NAME_KEY);
+      if (typeof raw !== "string") return "";
+      return raw.trim().slice(0, MAX_PET_NAME_LEN);
+    } catch {
+      return "";
+    }
+  }
+
+  function saveStoredPetName(raw) {
+    const t = typeof raw === "string" ? raw.trim().slice(0, MAX_PET_NAME_LEN) : "";
+    try {
+      if (!t) localStorage.removeItem(PET_NAME_KEY);
+      else localStorage.setItem(PET_NAME_KEY, t);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function getPetDisplayName() {
+    return loadStoredPetName() || DEFAULT_PET_NAME;
+  }
+
+  function applyPetLabels() {
+    const name = getPetDisplayName();
+    root.querySelectorAll(".desk-pet-title").forEach((el) => {
+      el.textContent = name;
+    });
+    const meterEl = alivePanel.querySelector(".desk-pet-meter");
+    if (meterEl) meterEl.setAttribute("aria-label", `How full ${name} is`);
+    const gearBtn = document.getElementById("desk-pet-settings-open");
+    if (gearBtn) gearBtn.setAttribute("aria-label", `${name} settings`);
+    const settingsTitleEl = document.getElementById("desk-pet-settings-title");
+    if (settingsTitleEl) settingsTitleEl.textContent = `${name} settings`;
+    const reviveTitleEl = revivePanel.querySelector(".desk-pet-revive-title");
+    if (reviveTitleEl) reviveTitleEl.textContent = `Your ${name} nodded off…`;
+    const reviveHintEl = revivePanel.querySelector(".desk-pet-revive-hint");
+    if (reviveHintEl) reviveHintEl.textContent = `${name} went too long without a meal. Wake them with a little care.`;
+    root.setAttribute("aria-label", name);
+  }
+
   const UI_COLLAPSED_KEY = "managerDailyDeskPetUiCollapsed";
   let collapsed = false;
   try {
@@ -67,6 +174,190 @@
   }
 
   const collapseToggles = root.querySelectorAll(".desk-pet-collapse-toggle");
+
+  const CORNER_KEY = "managerDailyDeskPetCorner";
+  const CORNER_IDS = /** @type {const} */ (["br", "bl", "tr", "tl"]);
+
+  const PALETTE_KEY = "managerDailyDeskPetPalette";
+  const PALETTE_IDS = /** @type {const} */ ([
+    "lavender",
+    "ocean",
+    "meadow",
+    "sunset",
+    "berry",
+    "honey",
+    "arctic",
+    "charcoal",
+  ]);
+
+  const settingsDialog = document.getElementById("desk-pet-settings");
+  const settingsOpenBtn = document.getElementById("desk-pet-settings-open");
+  const settingsCloseBtn = document.getElementById("desk-pet-settings-close");
+  const settingsDoneBtn = document.getElementById("desk-pet-settings-done");
+  const cornerSelect = document.getElementById("desk-pet-corner");
+  const paletteSelect = document.getElementById("desk-pet-palette");
+  const nameInput = document.getElementById("desk-pet-name");
+  const nameHintEl = document.getElementById("desk-pet-name-hint");
+  const nameRandomBtn = document.getElementById("desk-pet-name-random");
+
+  function updateNameFieldFeedback() {
+    if (!nameHintEl || !nameInput) return;
+    const len = nameInput.value.length;
+    const max = MAX_PET_NAME_LEN;
+    if (len > max) {
+      nameHintEl.textContent = `Name can be at most ${max} characters.`;
+      nameHintEl.className = "desk-pet-settings-hint desk-pet-settings-hint--error";
+      nameInput.classList.add("desk-pet-settings-input--invalid");
+      return;
+    }
+    nameInput.classList.remove("desk-pet-settings-input--invalid");
+    if (len === max) {
+      nameHintEl.textContent = `Maximum length (${max} characters).`;
+      nameHintEl.className = "desk-pet-settings-hint desk-pet-settings-hint--limit";
+      return;
+    }
+    if (len > 0) {
+      nameHintEl.textContent = `${len} / ${max} characters`;
+      nameHintEl.className = "desk-pet-settings-hint";
+      return;
+    }
+    nameHintEl.textContent = `Up to ${max} characters`;
+    nameHintEl.className = "desk-pet-settings-hint";
+  }
+
+  /** @returns {(typeof CORNER_IDS)[number]} */
+  function loadCornerPref() {
+    try {
+      const raw = localStorage.getItem(CORNER_KEY);
+      if (raw === "br" || raw === "bl" || raw === "tr" || raw === "tl") return raw;
+    } catch {
+      /* ignore */
+    }
+    return "br";
+  }
+
+  /** @param {(typeof CORNER_IDS)[number]} corner */
+  function applyCornerPref(corner) {
+    for (const id of CORNER_IDS) {
+      root.classList.remove(`desk-pet--corner-${id}`);
+    }
+    root.classList.add(`desk-pet--corner-${corner}`);
+    if (typeof window.ManagerDailyToasts?.syncAnchorFromDeskPet === "function") {
+      window.ManagerDailyToasts.syncAnchorFromDeskPet();
+    }
+  }
+
+  /** @param {(typeof CORNER_IDS)[number]} corner */
+  function saveCornerPref(corner) {
+    try {
+      localStorage.setItem(CORNER_KEY, corner);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** @returns {(typeof PALETTE_IDS)[number]} */
+  function loadPalettePref() {
+    try {
+      const raw = localStorage.getItem(PALETTE_KEY);
+      if (raw && /** @type {readonly string[]} */ (PALETTE_IDS).includes(raw)) {
+        return /** @type {(typeof PALETTE_IDS)[number]} */ (raw);
+      }
+    } catch {
+      /* ignore */
+    }
+    return "lavender";
+  }
+
+  /** @param {(typeof PALETTE_IDS)[number]} palette */
+  function applyPalettePref(palette) {
+    for (const id of PALETTE_IDS) {
+      if (id === "lavender") continue;
+      root.classList.remove(`desk-pet--palette-${id}`);
+    }
+    if (palette !== "lavender") {
+      root.classList.add(`desk-pet--palette-${palette}`);
+    }
+  }
+
+  /** @param {(typeof PALETTE_IDS)[number]} palette */
+  function savePalettePref(palette) {
+    try {
+      localStorage.setItem(PALETTE_KEY, palette);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  applyCornerPref(loadCornerPref());
+  applyPalettePref(loadPalettePref());
+  if (cornerSelect) {
+    cornerSelect.value = loadCornerPref();
+  }
+  if (paletteSelect) {
+    paletteSelect.value = loadPalettePref();
+  }
+
+  if (settingsDialog && settingsOpenBtn && cornerSelect && typeof settingsDialog.showModal === "function") {
+    settingsOpenBtn.addEventListener("click", () => {
+      cornerSelect.value = loadCornerPref();
+      if (paletteSelect) paletteSelect.value = loadPalettePref();
+      if (nameInput) nameInput.value = loadStoredPetName();
+      updateNameFieldFeedback();
+      settingsDialog.showModal();
+    });
+    const closeSettings = () => {
+      if (nameInput && nameInput.value.length > MAX_PET_NAME_LEN) {
+        nameInput.value = nameInput.value.slice(0, MAX_PET_NAME_LEN);
+        saveStoredPetName(nameInput.value);
+        applyPetLabels();
+        updateNameFieldFeedback();
+      }
+      if (settingsDialog.open) settingsDialog.close();
+    };
+    settingsCloseBtn?.addEventListener("click", closeSettings);
+    settingsDoneBtn?.addEventListener("click", closeSettings);
+    settingsDialog.addEventListener("click", (e) => {
+      if (e.target === settingsDialog) closeSettings();
+    });
+    cornerSelect.addEventListener("change", () => {
+      const v = cornerSelect.value;
+      if (v !== "br" && v !== "bl" && v !== "tr" && v !== "tl") return;
+      applyCornerPref(v);
+      saveCornerPref(v);
+    });
+    nameInput?.addEventListener("input", () => {
+      if (nameInput.value.length <= MAX_PET_NAME_LEN) {
+        saveStoredPetName(nameInput.value);
+        applyPetLabels();
+      }
+      updateNameFieldFeedback();
+    });
+    nameRandomBtn?.addEventListener("click", () => {
+      if (!nameInput) return;
+      const pick = CUTE_PET_NAMES[Math.floor(Math.random() * CUTE_PET_NAMES.length)];
+      nameInput.value = pick;
+      saveStoredPetName(pick);
+      applyPetLabels();
+      updateNameFieldFeedback();
+      nameInput.focus();
+    });
+  } else if (cornerSelect) {
+    cornerSelect.addEventListener("change", () => {
+      const v = cornerSelect.value;
+      if (v !== "br" && v !== "bl" && v !== "tr" && v !== "tl") return;
+      applyCornerPref(v);
+      saveCornerPref(v);
+    });
+  }
+  paletteSelect?.addEventListener("change", () => {
+    const v = paletteSelect.value;
+    if (!/** @type {readonly string[]} */ (PALETTE_IDS).includes(v)) return;
+    applyPalettePref(/** @type {(typeof PALETTE_IDS)[number]} */ (v));
+    savePalettePref(/** @type {(typeof PALETTE_IDS)[number]} */ (v));
+  });
+
+  applyPetLabels();
 
   const TICKLE_SPECS = [
     { spec: "desk-pet-creature--giggle", ms: 950 },
@@ -82,7 +373,7 @@
     { cls: "desk-pet-creature--idle-jelly", ms: 1950 },
     { cls: "desk-pet-creature--idle-nod", ms: 1650 },
   ];
-  const IDLE_ANIM_CLASSES = IDLE_ANIM_SPECS.map((s) => s.spec);
+  const IDLE_ANIM_CLASSES = IDLE_ANIM_SPECS.map((s) => s.cls);
 
   let tickleAnimTimer = 0;
   let idleSchedulerTimer = 0;
@@ -141,6 +432,15 @@
     alivePanel.classList.remove("desk-pet-panel--alert-cute", "desk-pet-panel--alert-urgent");
   }
 
+  /** Stop panel wobble / danger animations (e.g. after feeding above 10%). */
+  function dismissDecayPanelAnimations() {
+    if (panelAlertTimer) {
+      window.clearTimeout(panelAlertTimer);
+      panelAlertTimer = 0;
+    }
+    clearPanelAlertClasses();
+  }
+
   function showPanelAlert(kind, ms) {
     clearPanelAlertClasses();
     if (panelAlertTimer) window.clearTimeout(panelAlertTimer);
@@ -160,7 +460,8 @@
 
   function startTitleFlash(urgent) {
     stopTitleFlash();
-    const a = urgent ? "Desk buddy needs food!" : "Desk buddy";
+    const petName = getPetDisplayName();
+    const a = urgent ? `${petName} needs food!` : petName;
     const b = baseTitle;
     titleFlashTimer = window.setInterval(() => {
       titleFlashState = !titleFlashState;
@@ -183,7 +484,7 @@
     state.alertedCute = true;
     setStatus("Psst… my tummy's making tiny rumbles. A snack soon?", 6500);
     showPanelAlert("cute", 5200);
-    tryNotify("Desk buddy", "Getting a bit peckish—maybe a snack when you can?");
+    tryNotify(getPetDisplayName(), "Getting a bit peckish—maybe a snack when you can?");
     save();
     window.dispatchEvent(new CustomEvent("deskPet:hungerCute", { detail: { ...state } }));
   }
@@ -194,9 +495,29 @@
     setStatus("I'm really hungry now… please feed me soon!", 8000);
     showPanelAlert("urgent", 7500);
     startTitleFlash(true);
-    tryNotify("Desk buddy needs you!", "They're running on empty—feed them before it's too late.");
+    const petName = getPetDisplayName();
+    tryNotify(
+      `${petName} needs you!`,
+      `${petName} is running on empty—feed them before it's too late.`
+    );
     save();
     window.dispatchEvent(new CustomEvent("deskPet:hungerUrgent", { detail: { ...state } }));
+  }
+
+  /**
+   * On each fullness drop from time decay: wobble in 6–11%, danger shake in 1–5%.
+   * (5% is danger; 6–11% is the softer band.)
+   */
+  function maybeDecayPanelRockOrDanger(prevFullness, nextFullness) {
+    if (state.expired) return;
+    if (nextFullness >= prevFullness) return;
+    if (nextFullness <= 0) return;
+
+    if (nextFullness <= 5) {
+      showPanelAlert("urgent", 3400);
+    } else if (nextFullness <= 11) {
+      showPanelAlert("cute", 3000);
+    }
   }
 
   function maybeHungerAlertsAfterDecay(prev, next) {
@@ -242,6 +563,7 @@
     }
 
     maybeHungerAlertsAfterDecay(prev, next);
+    maybeDecayPanelRockOrDanger(prev, next);
     save();
   }
 
@@ -278,9 +600,13 @@
 
   function applyPanelLayout() {
     root.classList.toggle("desk-pet--compact", collapsed);
+    const petName = getPetDisplayName();
     collapseToggles.forEach((btn) => {
       btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-      btn.setAttribute("aria-label", collapsed ? "Expand desk buddy panel" : "Shrink to slim bar");
+      btn.setAttribute(
+        "aria-label",
+        collapsed ? `Expand ${petName} panel` : `Shrink ${petName} to a slim bar`
+      );
       btn.textContent = collapsed ? "\u25B4" : "\u25BE";
     });
 
@@ -292,7 +618,7 @@
       aliveExpand.hidden = true;
       aliveCompact.hidden = true;
       reviveExpand.hidden = collapsed;
-      reviveCompact.hidden = !collapsed;
+      reviveCompact.hidden = false;
       reviveCompactPct.textContent = `${Math.round(clamp(state.fullness, 0, 100))}%`;
     } else {
       reviveExpand.hidden = true;
@@ -450,7 +776,10 @@
     state.lastFullnessAt = new Date().toISOString();
   }
 
-  function feed() {
+  /** @param {{ source?: string }} [opts] Use `source: "manual"` for the Feed button; `taskCreated` / `taskCompleted` for gamified feeds. */
+  function feed(opts) {
+    opts = opts || {};
+    const source = typeof opts.source === "string" ? opts.source : undefined;
     applyTimeDecay();
     if (state.expired) return;
 
@@ -458,19 +787,53 @@
       anim("desk-pet-creature--refuse-feed", 1150);
       setStatus("No more—I'm stuffed!", 2400);
       window.dispatchEvent(new CustomEvent("deskPet:feedRefused", { detail: { ...state } }));
+      if (typeof window.ManagerDailyToasts !== "undefined" && typeof window.ManagerDailyToasts.show === "function") {
+        window.ManagerDailyToasts.show({
+          message: `${getPetDisplayName()} is full, great job!`,
+          variant: "success",
+        });
+      }
       return;
     }
 
-    state.fullness = clamp(Math.floor(state.fullness + 22), 0, 100);
+    const fullnessBefore = state.fullness;
+    const fullnessAfter = clamp(Math.floor(fullnessBefore + 22), 0, 100);
+    const delta = fullnessAfter - fullnessBefore;
+    state.fullness = fullnessAfter;
     state.feedCount += 1;
     touchFullnessClock();
     resetAlertFlagsIfRecovered();
     save();
+    if (state.fullness > 10) dismissDecayPanelAnimations();
     anim("desk-pet-creature--munch", 1100);
     spawnFeedHearts();
     setStatus("Yum!", 1800);
     render();
-    window.dispatchEvent(new CustomEvent("deskPet:feed", { detail: { ...state } }));
+    window.dispatchEvent(
+      new CustomEvent("deskPet:feed", {
+        detail: source ? { ...state, source } : { ...state },
+      })
+    );
+
+    if (
+      typeof window.ManagerDailyToasts !== "undefined" &&
+      typeof window.ManagerDailyToasts.show === "function"
+    ) {
+      const petName = getPetDisplayName();
+      if (fullnessAfter >= 100) {
+        if (source === "manual" || source === "taskCreated" || source === "taskCompleted") {
+          window.ManagerDailyToasts.show({
+            message: `${petName} is full, great job!`,
+            variant: "success",
+          });
+        }
+      } else if (source === "manual" && delta > 0) {
+        window.ManagerDailyToasts.show({
+          message: `You fed ${petName}. Contentment went up by ${delta}%.`,
+          variant: "success",
+        });
+      }
+    }
   }
 
   function tickle() {
@@ -493,7 +856,7 @@
     state.alertedUrgent = false;
     touchFullnessClock();
     stopTitleFlash();
-    clearPanelAlertClasses();
+    dismissDecayPanelAnimations();
     save();
     renderVisibility();
     render();
@@ -509,9 +872,8 @@
     render();
   }
 
-  btnFeed.addEventListener("click", feed);
+  btnFeed.addEventListener("click", () => feed({ source: "manual" }));
   btnTickle.addEventListener("click", tickle);
-  btnRevive.addEventListener("click", revive);
   reviveCompactBtn.addEventListener("click", revive);
   collapseToggles.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -542,6 +904,7 @@
 
   window.DeskPet = {
     getState: () => ({ ...state }),
+    getPetDisplayName,
     feed,
     tickle,
     revive,
@@ -567,4 +930,49 @@
       };
     },
   };
+
+  (function consumeDeskPetGamifyFromUrl() {
+    try {
+      const u = new URL(window.location.href);
+      const parseCount = (param) => {
+        const raw = u.searchParams.get(param);
+        if (raw === null || raw === "") return 0;
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n) || n < 1) return 0;
+        return Math.min(50, n);
+      };
+      const createN = parseCount("deskPetCreate");
+      const completeN = parseCount("deskPetComplete");
+      if (createN === 0 && completeN === 0) return;
+
+      u.searchParams.delete("deskPetCreate");
+      u.searchParams.delete("deskPetComplete");
+      const next = `${u.pathname}${u.search}${u.hash}`;
+      window.history.replaceState({}, "", next);
+
+      if (createN > 0 && typeof window.ManagerDailyToasts?.show === "function") {
+        window.ManagerDailyToasts.show({
+          message: `You created a task. ${getPetDisplayName()} is happy!`,
+          variant: "success",
+        });
+      }
+
+      /** @type {string[]} */
+      const queue = [];
+      for (let i = 0; i < createN; i++) queue.push("taskCreated");
+      for (let i = 0; i < completeN; i++) queue.push("taskCompleted");
+
+      let i = 0;
+      const gapMs = 400;
+      function step() {
+        if (i >= queue.length) return;
+        feed({ source: queue[i] });
+        i += 1;
+        if (i < queue.length) window.setTimeout(step, gapMs);
+      }
+      window.setTimeout(step, 80);
+    } catch {
+      /* ignore */
+    }
+  })();
 })();
