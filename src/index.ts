@@ -17,6 +17,7 @@ import {
   dismissEmailSuggestion,
   findUserWithHashByEmail,
   getTaskDone,
+  getTaskTitle,
   listDismissedEmailFingerprints,
   listTasks,
   normalizeEmail,
@@ -265,6 +266,19 @@ function homeForDay(day: string, deskPet?: { create?: number; complete?: number 
   return `${u.pathname}${u.search}`;
 }
 
+const MAX_TASK_TITLE_FLASH_LEN = 120;
+
+/** Append one-time query params read by `toasts.js` for a removed-task notification. */
+function withTaskRemovedFlash(pathWithQuery: string, title: string | null): string {
+  const u = new URL(pathWithQuery, "http://_/");
+  u.searchParams.set("taskRemoved", "1");
+  if (title) {
+    const t = title.trim().slice(0, MAX_TASK_TITLE_FLASH_LEN);
+    if (t) u.searchParams.set("taskTitle", t);
+  }
+  return `${u.pathname}${u.search}`;
+}
+
 app.get("/", async (req, res, next) => {
   try {
     const q = typeof req.query.date === "string" ? req.query.date : "";
@@ -425,8 +439,29 @@ app.post("/tasks/:id/toggle", (req, res) => {
 
 app.post("/tasks/:id/delete", (req, res) => {
   const id = Number(req.params.id);
-  if (Number.isFinite(id)) deleteTask(id);
-  res.redirect(req.get("referer") || "/");
+  const day = dayParam.safeParse(req.body.day);
+  let removedTitle: string | null = null;
+  if (Number.isFinite(id)) {
+    removedTitle = getTaskTitle(id);
+    deleteTask(id);
+  }
+  let target: string;
+  if (day.success) {
+    target = homeForDay(day.data);
+  } else {
+    const ref = req.get("referer");
+    if (ref) {
+      try {
+        const r = new URL(ref);
+        target = `${r.pathname}${r.search}`;
+      } catch {
+        target = "/";
+      }
+    } else {
+      target = "/";
+    }
+  }
+  res.redirect(withTaskRemovedFlash(target, removedTitle));
 });
 
 app.post("/carry-over", (req, res) => {

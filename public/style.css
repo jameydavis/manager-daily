@@ -7,6 +7,11 @@
   --today: rgba(255, 200, 87, 0.25);
   --danger: #f87171;
   --border: #2a3545;
+  --toast-info-br: rgba(110, 168, 254, 0.35);
+  --toast-pet-br: rgba(180, 150, 255, 0.45);
+  --toast-created-br: rgba(110, 220, 180, 0.5);
+  --toast-completed-br: rgba(110, 168, 254, 0.45);
+  --toast-removed-br: rgba(248, 113, 113, 0.45);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
@@ -59,10 +64,45 @@ body {
   animation: toast-in 0.28s ease-out;
 }
 
+.toast--info {
+  border-color: var(--toast-info-br);
+  box-shadow:
+    0 0 0 1px rgba(110, 168, 254, 0.1) inset,
+    0 10px 32px rgba(0, 0, 0, 0.5);
+}
+
 .toast--success {
   border-color: rgba(110, 168, 254, 0.45);
   box-shadow:
     0 0 0 1px rgba(110, 168, 254, 0.12) inset,
+    0 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+.toast--pet {
+  border-color: var(--toast-pet-br);
+  box-shadow:
+    0 0 0 1px rgba(180, 150, 255, 0.12) inset,
+    0 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+.toast--task-created {
+  border-color: var(--toast-created-br);
+  box-shadow:
+    0 0 0 1px rgba(110, 220, 180, 0.12) inset,
+    0 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+.toast--task-completed {
+  border-color: var(--toast-completed-br);
+  box-shadow:
+    0 0 0 1px rgba(110, 168, 254, 0.12) inset,
+    0 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+.toast--task-removed {
+  border-color: var(--toast-removed-br);
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.12) inset,
     0 10px 32px rgba(0, 0, 0, 0.5);
 }
 

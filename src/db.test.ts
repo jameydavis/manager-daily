@@ -48,6 +48,13 @@ describe("db", () => {
     expect(db.getTaskDone(99999)).toBeNull();
   });
 
+  it("getTaskTitle returns title or null", () => {
+    db.addTask("2026-04-04", "Named", null);
+    const [row] = db.listTasks("2026-04-04");
+    expect(db.getTaskTitle(row.id)).toBe("Named");
+    expect(db.getTaskTitle(99999)).toBeNull();
+  });
+
   it("deleteTask removes row", () => {
     db.addTask("2026-04-03", "Gone", null);
     const [row] = db.listTasks("2026-04-03");

@@ -135,8 +135,8 @@
                         </span>
                         <% } %>
                     </div>
-                    <form method="post" action="/tasks/<%= t.id %>/delete" class="inline"
-                      onsubmit="return confirm('Delete this task?');">
+                    <form method="post" action="/tasks/<%= t.id %>/delete" class="inline">
+                      <input type="hidden" name="day" value="<%= selected %>" />
                       <button type="submit" class="danger ghost">Remove</button>
                     </form>
                   </li>

@@ -27,15 +27,40 @@
     return el;
   }
 
+  /** @type {ReadonlySet<string>} */
+  const VARIANT_CLASS = new Set([
+    "info",
+    "warning",
+    "success",
+    "pet",
+    "task-created",
+    "task-completed",
+    "task-removed",
+  ]);
+
   /**
-   * @param {{ title?: string; message: string; variant?: "info" | "success" | "warning"; durationMs?: number }} opts
+   * @param {unknown} raw
+   * @returns {"info" | "warning" | "success" | "pet" | "task-created" | "task-completed" | "task-removed"}
+   */
+  function normalizeVariant(raw) {
+    const v = typeof raw === "string" ? raw.trim() : "";
+    if (VARIANT_CLASS.has(v)) {
+      return /** @type {"info" | "warning" | "success" | "pet" | "task-created" | "task-completed" | "task-removed"} */ (
+        v
+      );
+    }
+    return "info";
+  }
+
+  /**
+   * @param {{ title?: string; message: string; variant?: string; durationMs?: number }} opts
    */
   function show(opts) {
     const message = typeof opts.message === "string" ? opts.message.trim() : "";
     if (!message) return;
 
     const title = typeof opts.title === "string" ? opts.title.trim() : "";
-    const variant = opts.variant === "success" || opts.variant === "warning" ? opts.variant : "info";
+    const variant = normalizeVariant(opts.variant);
     const durationMs =
       typeof opts.durationMs === "number" && Number.isFinite(opts.durationMs) && opts.durationMs > 0
         ? Math.min(opts.durationMs, 60000)
@@ -89,4 +114,21 @@
   }
 
   window.ManagerDailyToasts = { show, syncAnchorFromDeskPet };
+
+  (function consumeTaskRemovedFromUrl() {
+    try {
+      const u = new URL(window.location.href);
+      if (u.searchParams.get("taskRemoved") !== "1") return;
+      const rawTitle = u.searchParams.get("taskTitle");
+      u.searchParams.delete("taskRemoved");
+      u.searchParams.delete("taskTitle");
+      const next = `${u.pathname}${u.search}${u.hash}`;
+      window.history.replaceState({}, "", next);
+      const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
+      const message = title ? `Removed “${title}”.` : "Task removed.";
+      show({ message, variant: "task-removed" });
+    } catch {
+      /* ignore */
+    }
+  })();
 })();

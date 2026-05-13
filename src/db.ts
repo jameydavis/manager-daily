@@ -224,6 +224,14 @@ export function getTaskDone(id: number): number | null {
   return row.done;
 }
 
+/** Title for an existing task, or `null` if missing (used before delete for flash toast). */
+export function getTaskTitle(id: number): string | null {
+  if (!Number.isFinite(id)) return null;
+  const row = db.prepare(`SELECT title FROM tasks WHERE id = ?`).get(id) as { title: string } | undefined;
+  if (!row) return null;
+  return row.title;
+}
+
 export function toggleTask(id: number): void {
   db.prepare(`UPDATE tasks SET done = CASE WHEN done = 1 THEN 0 ELSE 1 END WHERE id = ?`).run(
     id

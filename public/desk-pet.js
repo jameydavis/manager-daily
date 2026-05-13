@@ -790,7 +790,7 @@
       if (typeof window.ManagerDailyToasts !== "undefined" && typeof window.ManagerDailyToasts.show === "function") {
         window.ManagerDailyToasts.show({
           message: `${getPetDisplayName()} is full, great job!`,
-          variant: "success",
+          variant: "pet",
         });
       }
       return;
@@ -824,13 +824,13 @@
         if (source === "manual" || source === "taskCreated" || source === "taskCompleted") {
           window.ManagerDailyToasts.show({
             message: `${petName} is full, great job!`,
-            variant: "success",
+            variant: "pet",
           });
         }
       } else if (source === "manual" && delta > 0) {
         window.ManagerDailyToasts.show({
           message: `You fed ${petName}. Contentment went up by ${delta}%.`,
-          variant: "success",
+          variant: "pet",
         });
       }
     }
@@ -945,16 +945,11 @@
       const completeN = parseCount("deskPetComplete");
       if (createN === 0 && completeN === 0) return;
 
-      u.searchParams.delete("deskPetCreate");
-      u.searchParams.delete("deskPetComplete");
-      const next = `${u.pathname}${u.search}${u.hash}`;
-      window.history.replaceState({}, "", next);
-
-      if (createN > 0 && typeof window.ManagerDailyToasts?.show === "function") {
-        window.ManagerDailyToasts.show({
-          message: `You created a task. ${getPetDisplayName()} is happy!`,
-          variant: "success",
-        });
+      function stripGamifyFromUrl() {
+        u.searchParams.delete("deskPetCreate");
+        u.searchParams.delete("deskPetComplete");
+        const next = `${u.pathname}${u.search}${u.hash}`;
+        window.history.replaceState({}, "", next);
       }
 
       /** @type {string[]} */
@@ -962,15 +957,60 @@
       for (let i = 0; i < createN; i++) queue.push("taskCreated");
       for (let i = 0; i < completeN; i++) queue.push("taskCompleted");
 
-      let i = 0;
+      let qi = 0;
       const gapMs = 400;
-      function step() {
-        if (i >= queue.length) return;
-        feed({ source: queue[i] });
-        i += 1;
-        if (i < queue.length) window.setTimeout(step, gapMs);
+      function runFeedQueue() {
+        function step() {
+          if (qi >= queue.length) return;
+          feed({ source: queue[qi] });
+          qi += 1;
+          if (qi < queue.length) window.setTimeout(step, gapMs);
+        }
+        window.setTimeout(step, 80);
       }
-      window.setTimeout(step, 80);
+
+      function showGamifyToastsThenStrip(then) {
+        const name = getPetDisplayName();
+        const show = window.ManagerDailyToasts?.show;
+        if (typeof show !== "function") {
+          then();
+          return;
+        }
+        stripGamifyFromUrl();
+        if (createN > 0) {
+          show({
+            message: `You created a task. ${name} is happy!`,
+            variant: "task-created",
+          });
+        }
+        if (completeN > 0) {
+          const delayMs = createN > 0 ? 520 : 0;
+          window.setTimeout(() => {
+            show({
+              message: `You completed a task. ${name} loves it!`,
+              variant: "task-completed",
+            });
+          }, delayMs);
+        }
+        then();
+      }
+
+      let attempts = 0;
+      const maxAttempts = 60;
+      function tryConsume() {
+        if (typeof window.ManagerDailyToasts?.show === "function") {
+          showGamifyToastsThenStrip(runFeedQueue);
+          return;
+        }
+        attempts += 1;
+        if (attempts >= maxAttempts) {
+          stripGamifyFromUrl();
+          runFeedQueue();
+          return;
+        }
+        window.setTimeout(tryConsume, 16);
+      }
+      tryConsume();
     } catch {
       /* ignore */
     }
