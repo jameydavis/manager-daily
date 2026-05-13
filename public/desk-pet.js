@@ -7,6 +7,12 @@
   const MS_DECAY_INTERVAL = 5 * 60 * 1000;
   const FULLNESS_LOST_PER_INTERVAL = 10;
   const TICK_MS = 60 * 1000;
+  /** Notional baseline fullness drop per tickle before the 3× tuning (historically ~implicit bump via decay only). */
+  const EXERTION_BASE_PER_TICKLE = 2;
+  const TICKLE_EXERTION_MULTIPLIER = 3;
+  const EXERTION_DROP_PER_TICKLE = EXERTION_BASE_PER_TICKLE * TICKLE_EXERTION_MULTIPLIER;
+  /** One play session tires the pet the same total amount as one tickle (after multiplier). */
+  const PLAY_SESSION_MS = 6000;
 
   /** @type {{ fullness: number; lastFullnessAt: string; tickleCount: number; feedCount: number; expired: boolean; alertedCute: boolean; alertedUrgent: boolean }} */
   let state = {
@@ -26,7 +32,9 @@
   const statusEl = document.getElementById("desk-pet-status");
   const meterFill = document.getElementById("desk-pet-meter-fill");
   const btnFeed = document.getElementById("desk-pet-feed");
-  const btnTickle = document.getElementById("desk-pet-tickle");
+  const btnPlay = document.getElementById("desk-pet-play");
+  const stageEl = document.getElementById("desk-pet-stage");
+  const playBall = document.getElementById("desk-pet-play-ball");
   const fxLayer = document.getElementById("desk-pet-fx");
   const aliveExpand = document.getElementById("desk-pet-alive-expand");
   const aliveCompact = document.getElementById("desk-pet-alive-compact");
@@ -44,7 +52,9 @@
     !statusEl ||
     !meterFill ||
     !btnFeed ||
-    !btnTickle ||
+    !btnPlay ||
+    !stageEl ||
+    !playBall ||
     !aliveExpand ||
     !aliveCompact ||
     !aliveCompactPct ||
@@ -163,6 +173,7 @@
     const reviveHintEl = revivePanel.querySelector(".desk-pet-revive-hint");
     if (reviveHintEl) reviveHintEl.textContent = `${name} went too long without a meal. Wake them with a little care.`;
     root.setAttribute("aria-label", name);
+    creature.setAttribute("aria-label", `Tickle ${name}`);
   }
 
   const UI_COLLAPSED_KEY = "managerDailyDeskPetUiCollapsed";
@@ -376,6 +387,8 @@
   const IDLE_ANIM_CLASSES = IDLE_ANIM_SPECS.map((s) => s.cls);
 
   let tickleAnimTimer = 0;
+  let playActive = false;
+  let playEndTimer = 0;
   let idleSchedulerTimer = 0;
   let idleAnimEndTimer = 0;
   const baseTitle = document.title;
@@ -678,6 +691,8 @@
 
   function isCreatureBusy() {
     return (
+      playActive ||
+      creature.classList.contains("desk-pet-creature--ball-play") ||
       creature.classList.contains("desk-pet-creature--munch") ||
       creature.classList.contains("desk-pet-creature--refuse-feed") ||
       creature.classList.contains("desk-pet-creature--tickle") ||
@@ -776,10 +791,40 @@
     state.lastFullnessAt = new Date().toISOString();
   }
 
+  /** Reduce fullness from exertion (tickle / play). Applies wall-clock decay first. */
+  function applyExertionDrop(points) {
+    applyTimeDecay();
+    if (state.expired) return;
+    const n = Math.max(0, Math.round(points));
+    if (n <= 0) return;
+    const prev = state.fullness;
+    const next = clamp(prev - n, 0, 100);
+    state.fullness = next;
+
+    if (state.fullness <= 0) {
+      state.fullness = 0;
+      state.expired = true;
+      state.alertedCute = false;
+      state.alertedUrgent = false;
+      stopTitleFlash();
+      save();
+      renderVisibility();
+      render();
+      window.dispatchEvent(new CustomEvent("deskPet:expired", { detail: { ...state } }));
+      return;
+    }
+
+    maybeHungerAlertsAfterDecay(prev, state.fullness);
+    maybeDecayPanelRockOrDanger(prev, state.fullness);
+    save();
+    render();
+  }
+
   /** @param {{ source?: string }} [opts] Use `source: "manual"` for the Feed button; `taskCreated` / `taskCompleted` for gamified feeds. */
   function feed(opts) {
     opts = opts || {};
     const source = typeof opts.source === "string" ? opts.source : undefined;
+    if (playActive) return;
     applyTimeDecay();
     if (state.expired) return;
 
@@ -837,7 +882,8 @@
   }
 
   function tickle() {
-    applyTimeDecay();
+    if (playActive) return;
+    applyExertionDrop(EXERTION_DROP_PER_TICKLE);
     if (state.expired) return;
 
     state.tickleCount += 1;
@@ -847,6 +893,50 @@
     setStatus(lines[Math.floor(Math.random() * lines.length)], 2000);
     render();
     window.dispatchEvent(new CustomEvent("deskPet:tickle", { detail: { ...state } }));
+  }
+
+  function setInteractionLocked(locked) {
+    btnPlay.disabled = locked;
+    btnFeed.disabled = locked;
+    creature.classList.toggle("desk-pet-creature--interaction-locked", locked);
+    creature.tabIndex = locked ? -1 : 0;
+    creature.setAttribute("aria-disabled", locked ? "true" : "false");
+  }
+
+  function endBallPlay() {
+    if (playEndTimer) {
+      window.clearTimeout(playEndTimer);
+      playEndTimer = 0;
+    }
+    playActive = false;
+    playBall.classList.remove("desk-pet-play-ball--animate");
+    creature.classList.remove("desk-pet-creature--ball-play");
+    setInteractionLocked(false);
+    applyExertionDrop(EXERTION_DROP_PER_TICKLE);
+    if (!state.expired) {
+      setStatus("Fun! …Need a tiny rest now.", 3500);
+      scheduleIdleAnim();
+    }
+    window.dispatchEvent(new CustomEvent("deskPet:play", { detail: { ...state } }));
+  }
+
+  function play() {
+    if (playActive || state.expired) return;
+    applyTimeDecay();
+    if (state.expired) return;
+
+    playActive = true;
+    setInteractionLocked(true);
+    clearIdleAnimations();
+    clearTickleAnimation();
+    playBall.classList.remove("desk-pet-play-ball--animate");
+    creature.classList.remove("desk-pet-creature--ball-play");
+    void playBall.offsetWidth;
+    void creature.offsetWidth;
+    creature.classList.add("desk-pet-creature--ball-play");
+    playBall.classList.add("desk-pet-play-ball--animate");
+    setStatus("Ball! Get it!", 2200);
+    playEndTimer = window.setTimeout(endBallPlay, PLAY_SESSION_MS);
   }
 
   function revive() {
@@ -873,7 +963,15 @@
   }
 
   btnFeed.addEventListener("click", () => feed({ source: "manual" }));
-  btnTickle.addEventListener("click", tickle);
+  btnPlay.addEventListener("click", play);
+  creature.addEventListener("click", () => tickle());
+  creature.addEventListener("keydown", (e) => {
+    if (playActive || state.expired) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      tickle();
+    }
+  });
   reviveCompactBtn.addEventListener("click", revive);
   collapseToggles.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -907,6 +1005,7 @@
     getPetDisplayName,
     feed,
     tickle,
+    play,
     revive,
     tick,
     /** @param {(s: typeof state) => void} fn */
@@ -915,6 +1014,7 @@
       window.addEventListener("deskPet:feed", wrap);
       window.addEventListener("deskPet:feedRefused", wrap);
       window.addEventListener("deskPet:tickle", wrap);
+      window.addEventListener("deskPet:play", wrap);
       window.addEventListener("deskPet:hungerCute", wrap);
       window.addEventListener("deskPet:hungerUrgent", wrap);
       window.addEventListener("deskPet:expired", wrap);
@@ -923,6 +1023,7 @@
         window.removeEventListener("deskPet:feed", wrap);
         window.removeEventListener("deskPet:feedRefused", wrap);
         window.removeEventListener("deskPet:tickle", wrap);
+        window.removeEventListener("deskPet:play", wrap);
         window.removeEventListener("deskPet:hungerCute", wrap);
         window.removeEventListener("deskPet:hungerUrgent", wrap);
         window.removeEventListener("deskPet:expired", wrap);

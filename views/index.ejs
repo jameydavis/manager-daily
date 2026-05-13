@@ -302,7 +302,13 @@
       <div id="desk-pet-alive-expand" class="desk-pet-expandable">
         <div class="desk-pet-stage" id="desk-pet-stage">
           <div class="desk-pet-fx" id="desk-pet-fx" aria-hidden="true"></div>
-          <div class="desk-pet-creature" id="desk-pet-creature" aria-hidden="true">
+          <div
+            class="desk-pet-creature"
+            id="desk-pet-creature"
+            role="button"
+            tabindex="0"
+            aria-label="Tickle desk buddy"
+          >
             <span class="desk-pet-ear desk-pet-ear--left"></span>
             <span class="desk-pet-ear desk-pet-ear--right"></span>
             <span class="desk-pet-blush desk-pet-blush--left"></span>
@@ -315,6 +321,7 @@
               <span class="desk-pet-mouth"></span>
             </span>
           </div>
+          <div class="desk-pet-play-ball" id="desk-pet-play-ball" aria-hidden="true"></div>
         </div>
         <p class="desk-pet-status" id="desk-pet-status" aria-live="polite"></p>
         <div
@@ -329,7 +336,7 @@
         </div>
         <div class="desk-pet-actions">
           <button type="button" class="secondary" id="desk-pet-feed">Feed</button>
-          <button type="button" class="secondary" id="desk-pet-tickle">Tickle</button>
+          <button type="button" class="secondary" id="desk-pet-play">Play</button>
         </div>
       </div>
     </div>

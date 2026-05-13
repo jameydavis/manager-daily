@@ -1362,6 +1362,124 @@ a.report-name:hover {
   padding: 0.35rem 0 0.2rem;
 }
 
+.desk-pet-play-ball {
+  position: absolute;
+  left: 50%;
+  bottom: 10%;
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 50%;
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 30% 28%, #ffffff 0%, #ffe6c8 28%, #ffaac8 62%, #a894f0 100%);
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.38),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.12);
+  transform: translate3d(-50%, 0, 0);
+  will-change: transform, opacity;
+}
+
+.desk-pet-play-ball.desk-pet-play-ball--animate {
+  animation: desk-pet-ball-play 6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes desk-pet-ball-play {
+  0% {
+    opacity: 0;
+    transform: translate3d(calc(-50% - 1.1rem), 0.15rem, 0) scale(0.65);
+  }
+
+  4% {
+    opacity: 1;
+  }
+
+  12% {
+    transform: translate3d(calc(-50% + 0.95rem), -0.62rem, 0) scale(1.06);
+  }
+
+  22% {
+    transform: translate3d(calc(-50% - 0.75rem), -0.25rem, 0) scale(1);
+  }
+
+  33% {
+    transform: translate3d(calc(-50% + 1.05rem), -0.72rem, 0) scale(1.08);
+  }
+
+  44% {
+    transform: translate3d(calc(-50% - 0.55rem), 0.1rem, 0) scale(0.98);
+  }
+
+  55% {
+    transform: translate3d(calc(-50% + 0.85rem), -0.55rem, 0) scale(1.04);
+  }
+
+  66% {
+    transform: translate3d(calc(-50% - 0.9rem), 0.05rem, 0) scale(1);
+  }
+
+  78% {
+    transform: translate3d(calc(-50% + 0.7rem), -0.45rem, 0) scale(1.02);
+  }
+
+  90% {
+    opacity: 1;
+    transform: translate3d(calc(-50% + 0.15rem), -0.2rem, 0) scale(0.96);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, 0.12rem, 0) scale(0.8);
+  }
+}
+
+.desk-pet-creature--ball-play {
+  animation: desk-pet-creature-ball-play 6s ease-in-out forwards;
+}
+
+@keyframes desk-pet-creature-ball-play {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  10% {
+    transform: translate3d(0.48rem, -0.1rem, 0);
+  }
+
+  20% {
+    transform: translate3d(-0.38rem, 0.06rem, 0);
+  }
+
+  30% {
+    transform: translate3d(0.62rem, -0.14rem, 0);
+  }
+
+  40% {
+    transform: translate3d(-0.45rem, 0.04rem, 0);
+  }
+
+  50% {
+    transform: translate3d(0.55rem, -0.12rem, 0);
+  }
+
+  60% {
+    transform: translate3d(-0.52rem, 0.08rem, 0);
+  }
+
+  70% {
+    transform: translate3d(0.42rem, -0.1rem, 0);
+  }
+
+  80% {
+    transform: translate3d(-0.35rem, 0.05rem, 0);
+  }
+
+  90% {
+    transform: translate3d(0.22rem, -0.06rem, 0);
+  }
+}
+
 .desk-pet-fx {
   position: absolute;
   inset: 0;
@@ -1426,6 +1544,20 @@ a.report-name:hover {
   align-items: center;
   justify-content: center;
   transition: transform 0.15s ease;
+}
+
+.desk-pet-creature[role="button"] {
+  cursor: pointer;
+}
+
+.desk-pet-creature[role="button"]:focus-visible {
+  outline: 2px solid var(--pet-gear-focus);
+  outline-offset: 3px;
+}
+
+.desk-pet-creature--interaction-locked {
+  cursor: default;
+  pointer-events: none;
 }
 
 /* Random idle motion (~10s apart, see desk-pet.js) */
@@ -2160,6 +2292,7 @@ a.report-name:hover {
 
 .desk-pet-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
 }
 
