@@ -49,7 +49,7 @@ Copy **`.env.example`** to **`.env`** and adjust:
 
 - **Pick a day** from the calendar or `?date=YYYY-MM-DD` in the URL.
 - **Tasks:** add title + optional notes, mark done, **Remove** (no confirm—feedback is a **toast**).
-- **Carry over** copies incomplete items from the **last 14 calendar days** onto **today** (then opens today’s view).
+- **Carry over** copies incomplete items from the **last 14 calendar days** onto **today** (then opens today’s view). Each carried task adds **+1%** desk-buddy contentment (no feed/decay spike).
 - **Jira panel:** add issues to the selected day when Jira env vars are set.
 - **My team:** loads when Jira is configured and direct reports are set (env or defaults).
 
@@ -78,7 +78,7 @@ When you **manage tasks through the server** (same day you’re viewing), redire
 |--------|--------|
 | **Create task** (add form, email/Jira/fast-add paths, carry-over creating new rows, etc.) | Redirect may include **`deskPetCreate`**; the client shows a **task-created** toast and **queues “feed the buddy”** moments. |
 | **Mark a task done** (toggle) | Redirect may include **`deskPetComplete`**; **task-completed** toast + feed queue for completions. |
-| **Remove a task** | Redirect may include **`taskRemoved`** and **`taskTitle`**; **task-removed** toast (danger styling). |
+| **Remove a task** | Redirect may include **`taskRemoved`**, **`taskTitle`**, and **`deskPetRemove`**; **task-removed** toast and **+1%** contentment (no decay tick that load). |
 
 Counts are **capped** so a single load doesn’t spam dozens of feeds. Desk Buddy’s **happier animations** and your **toasts** reinforce finishing work—without changing data on the server beyond normal task operations.
 

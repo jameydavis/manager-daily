@@ -305,6 +305,12 @@ export function carryOverIncompleteFromDays(fromDays: string[], toDay: string): 
     )
     .all(...days) as { title: string; notes: string | null }[];
 
+  const existingTitles = new Set(
+    (
+      db.prepare(`SELECT title FROM tasks WHERE day = ?`).all(toDay) as { title: string }[]
+    ).map((t) => t.title.trim())
+  );
+
   let max = (
     db.prepare(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM tasks WHERE day = ?`).get(toDay) as {
       m: number;
@@ -313,10 +319,14 @@ export function carryOverIncompleteFromDays(fromDays: string[], toDay: string): 
   const insert = db.prepare(
     `INSERT INTO tasks (day, title, notes, sort_order) VALUES (?, ?, ?, ?)`
   );
+  const carriedTitles = new Set<string>();
   let n = 0;
   for (const r of rows) {
+    const title = r.title.trim();
+    if (!title || existingTitles.has(title) || carriedTitles.has(title)) continue;
+    carriedTitles.add(title);
     max += 1;
-    insert.run(toDay, r.title, r.notes, max);
+    insert.run(toDay, title, r.notes?.trim() || null, max);
     n++;
   }
   return n;

@@ -8,6 +8,7 @@ import {
   previousCalendarDays,
   monthGrid,
 } from "./dates.js";
+import { CARRY_OVER_LOOKBACK_DAYS } from "./app.js";
 
 describe("formatDay", () => {
   it("formats local calendar date as YYYY-MM-DD", () => {
@@ -72,6 +73,13 @@ describe("previousCalendarDays", () => {
   it("returns empty for invalid anchor or non-positive count", () => {
     expect(previousCalendarDays("bad", 14)).toEqual([]);
     expect(previousCalendarDays("2026-04-15", 0)).toEqual([]);
+  });
+
+  it("matches carry-over lookback window (14 days before anchor)", () => {
+    const days = previousCalendarDays("2026-06-20", CARRY_OVER_LOOKBACK_DAYS);
+    expect(days).toHaveLength(14);
+    expect(days[0]).toBe("2026-06-19");
+    expect(days[13]).toBe("2026-06-06");
   });
 });
 

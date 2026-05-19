@@ -29,4 +29,11 @@ describe("deskPetSyncStateSchema", () => {
     expect(parseDeskPetSyncState({ ...valid, corner: "xx" })).toBeNull();
     expect(parseDeskPetSyncState({ ...valid, game: { ...valid.game, fullness: 200 } })).toBeNull();
   });
+
+  it("rejects malformed or partial payloads", () => {
+    expect(parseDeskPetSyncState(null)).toBeNull();
+    expect(parseDeskPetSyncState({ v: 2, game: valid.game })).toBeNull();
+    expect(parseDeskPetSyncState({ ...valid, updatedAt: "" })).toBeNull();
+    expect(parseDeskPetSyncState({ ...valid, displayName: "x".repeat(13) })).toBeNull();
+  });
 });

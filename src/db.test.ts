@@ -83,6 +83,37 @@ describe("db", () => {
     expect(db.listTasks("2026-08-10").map((t) => t.title)).toEqual(["Older", "Newer"]);
   });
 
+  it("carryOverIncompleteFromDays skips titles already on the target day", () => {
+    db.addTask("2026-09-01", "Already here", null);
+    db.addTask("2026-09-01", "Fresh", null);
+    db.addTask("2026-09-10", "Already here", null);
+    db.addTask("2026-09-10", "Fresh", null);
+    const n = db.carryOverIncompleteFromDays(["2026-09-01", "2026-09-05"], "2026-09-10");
+    expect(n).toBe(0);
+    expect(db.listTasks("2026-09-10").map((t) => t.title)).toEqual(["Already here", "Fresh"]);
+  });
+
+  it("carryOverIncompleteFromDays carries each title once across source days", () => {
+    db.addTask("2026-09-20", "Repeat", null);
+    db.addTask("2026-09-22", "Repeat", null);
+    db.addTask("2026-09-24", "Once", null);
+    const n = db.carryOverIncompleteFromDays(["2026-09-20", "2026-09-22", "2026-09-24"], "2026-09-30");
+    expect(n).toBe(2);
+    expect(db.listTasks("2026-09-30").map((t) => t.title)).toEqual(["Repeat", "Once"]);
+  });
+
+  it("carryOverIncompleteFromDays ignores the target day in source list", () => {
+    db.addTask("2026-09-15", "Past", null);
+    db.addTask("2026-09-15", "Also on target", null);
+    const n = db.carryOverIncompleteFromDays(["2026-09-15", "2026-09-15"], "2026-09-15");
+    expect(n).toBe(0);
+    expect(db.listTasks("2026-09-15")).toHaveLength(2);
+  });
+
+  it("carryOverIncompleteFromDays returns 0 for empty source list", () => {
+    expect(db.carryOverIncompleteFromDays([], "2026-09-16")).toBe(0);
+  });
+
   it("dismissEmailSuggestion and listDismissedEmailFingerprints", () => {
     db.dismissEmailSuggestion("mid-123");
     expect(db.listDismissedEmailFingerprints()).toContain("mid-123");

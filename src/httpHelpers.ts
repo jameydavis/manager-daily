@@ -15,11 +15,22 @@ export function safeRedirectPath(raw: unknown, fallback = "/"): string {
 /** Build `/?date=…` with optional desk-buddy gamify query params (stripped client-side after use). */
 export function homeForDay(
   day: string,
-  deskPet?: { create?: number; complete?: number; completedTitle?: string | null }
+  deskPet?: {
+    create?: number;
+    complete?: number;
+    completedTitle?: string | null;
+    carryOver?: number;
+  }
 ): string {
   const u = new URL("http://_/");
   u.pathname = "/";
   u.searchParams.set("date", day);
+  if (deskPet?.carryOver != null && deskPet.carryOver > 0) {
+    u.searchParams.set(
+      "deskPetCarryOver",
+      String(Math.min(MAX_DESK_PET_QUEUE, Math.floor(deskPet.carryOver)))
+    );
+  }
   if (deskPet?.create != null && deskPet.create > 0) {
     u.searchParams.set(
       "deskPetCreate",
@@ -43,6 +54,7 @@ export function homeForDay(
 export function withTaskRemovedFlash(pathWithQuery: string, title: string | null): string {
   const u = new URL(pathWithQuery, "http://_/");
   u.searchParams.set("taskRemoved", "1");
+  u.searchParams.set("deskPetRemove", "1");
   if (title) {
     const t = title.trim().slice(0, MAX_TASK_TITLE_FLASH_LEN);
     if (t) u.searchParams.set("taskTitle", t);

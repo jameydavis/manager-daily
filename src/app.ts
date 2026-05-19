@@ -497,7 +497,7 @@ app.post("/carry-over", (_req, res) => {
   const targetDay = today();
   const fromDays = previousCalendarDays(targetDay, CARRY_OVER_LOOKBACK_DAYS);
   const created = carryOverIncompleteFromDays(fromDays, targetDay);
-  res.redirect(homeForDay(targetDay, created > 0 ? { create: created } : undefined));
+  res.redirect(homeForDay(targetDay, created > 0 ? { carryOver: created } : undefined));
 });
 
 app.post("/tasks/from-email-paste", (req, res) => {

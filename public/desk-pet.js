@@ -402,6 +402,10 @@
 
   const FEED_FOOD_ITEMS = ["🍎", "🍪", "🥕", "🍇", "🧀", "🍞", "🥐", "🍓", "🥨", "🍌", "🫐", "🥯"];
   const FEED_FOOD_FLIGHT_MS = 720;
+  /** Contentment gained when a task is removed (see `deskPetRemove` redirect param). */
+  const TASK_REMOVE_CONTENTMENT_BUMP = 1;
+  /** Contentment per task carried over (see `deskPetCarryOver` redirect param). */
+  const CARRY_OVER_CONTENTMENT_PER_TASK = 1;
 
   let tickleAnimTimer = 0;
   let playActive = false;
@@ -1031,6 +1035,47 @@
     state.lastFullnessAt = new Date().toISOString();
   }
 
+  /** @returns {boolean} */
+  function takeDeskPetRemoveFromUrl() {
+    try {
+      const u = new URL(window.location.href);
+      if (u.searchParams.get("deskPetRemove") !== "1") return false;
+      u.searchParams.delete("deskPetRemove");
+      const next = `${u.pathname}${u.search}${u.hash}`;
+      window.history.replaceState({}, "", next);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** @returns {number} */
+  function takeDeskPetCarryOverFromUrl() {
+    try {
+      const u = new URL(window.location.href);
+      const raw = u.searchParams.get("deskPetCarryOver");
+      if (raw === null || raw === "") return 0;
+      const n = parseInt(raw, 10);
+      if (!Number.isFinite(n) || n < 1) return 0;
+      const count = Math.min(50, n);
+      u.searchParams.delete("deskPetCarryOver");
+      const next = `${u.pathname}${u.search}${u.hash}`;
+      window.history.replaceState({}, "", next);
+      return count;
+    } catch {
+      return 0;
+    }
+  }
+
+  /** @param {number} delta */
+  function applyContentmentBump(delta) {
+    if (state.expired || delta <= 0) return;
+    state.fullness = clamp(state.fullness + delta, 0, 100);
+    touchFullnessClock();
+    resetAlertFlagsIfRecovered();
+    if (state.fullness > 10) dismissDecayPanelAnimations();
+  }
+
   /** Reduce fullness from exertion (tickle / play). Applies wall-clock decay first. */
   function applyExertionDrop(points) {
     applyTimeDecay();
@@ -1252,7 +1297,19 @@
   async function bootDeskPet() {
     load();
     await mergeDeskPetFromServer();
-    applyTimeDecay();
+    const taskRemovedBump = takeDeskPetRemoveFromUrl();
+    const carryOverCount = takeDeskPetCarryOverFromUrl();
+    if (taskRemovedBump) {
+      applyContentmentBump(TASK_REMOVE_CONTENTMENT_BUMP);
+      window.dispatchEvent(new CustomEvent("deskPet:taskRemoved", { detail: { ...state } }));
+    } else if (carryOverCount > 0) {
+      applyContentmentBump(carryOverCount * CARRY_OVER_CONTENTMENT_PER_TASK);
+      window.dispatchEvent(
+        new CustomEvent("deskPet:carryOver", { detail: { ...state, count: carryOverCount } })
+      );
+    } else {
+      applyTimeDecay();
+    }
     resetAlertFlagsIfRecovered();
     save();
     maybeSteadyStateAlertsOnLoad();
