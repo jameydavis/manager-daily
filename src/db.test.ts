@@ -55,6 +55,31 @@ describe("db", () => {
     expect(db.getTaskTitle(99999)).toBeNull();
   });
 
+  it("completeOpenTasksWithTitle marks matching open tasks on given days", () => {
+    db.addTask("2026-07-01", "Shared", null);
+    db.addTask("2026-07-05", "Shared", null);
+    db.addTask("2026-07-05", "Other", null);
+    db.addTask("2026-07-10", "Shared", null);
+    const anchor = db.listTasks("2026-07-10").find((t) => t.title === "Shared")!;
+    db.toggleTask(anchor.id);
+    const n = db.completeOpenTasksWithTitle("Shared", ["2026-07-10", "2026-07-05", "2026-07-01"], anchor.id);
+    expect(n).toBe(2);
+    expect(db.listTasks("2026-07-01")[0].done).toBe(1);
+    expect(db.listTasks("2026-07-05").find((t) => t.title === "Shared")!.done).toBe(1);
+    expect(db.listTasks("2026-07-05").find((t) => t.title === "Other")!.done).toBe(0);
+    expect(db.listTasks("2026-07-10")[0].done).toBe(1);
+  });
+
+  it("completeOpenTasksWithTitle ignores days outside the provided list", () => {
+    db.addTask("2026-07-20", "Shared", null);
+    db.addTask("2026-07-28", "Shared", null);
+    const [row] = db.listTasks("2026-07-28");
+    db.toggleTask(row.id);
+    db.completeOpenTasksWithTitle("Shared", ["2026-07-28"], row.id);
+    expect(db.listTasks("2026-07-20")[0].done).toBe(0);
+    expect(db.listTasks("2026-07-28")[0].done).toBe(1);
+  });
+
   it("deleteTask removes row", () => {
     db.addTask("2026-04-03", "Gone", null);
     const [row] = db.listTasks("2026-04-03");

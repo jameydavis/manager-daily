@@ -272,6 +272,30 @@ export function toggleTask(id: number): void {
   );
 }
 
+/**
+ * Marks incomplete tasks with the same trimmed title on the given days as done.
+ * @returns How many rows were updated (excluding already-done tasks).
+ */
+export function completeOpenTasksWithTitle(
+  title: string,
+  days: string[],
+  exceptId?: number
+): number {
+  const normalized = title.trim();
+  if (!normalized) return 0;
+  const uniqueDays = [...new Set(days.filter(Boolean))];
+  if (!uniqueDays.length) return 0;
+
+  const placeholders = uniqueDays.map(() => "?").join(", ");
+  const params: (string | number)[] = [normalized, ...uniqueDays];
+  let sql = `UPDATE tasks SET done = 1 WHERE done = 0 AND trim(title) = ? AND day IN (${placeholders})`;
+  if (exceptId != null && Number.isFinite(exceptId)) {
+    sql += ` AND id != ?`;
+    params.push(exceptId);
+  }
+  return db.prepare(sql).run(...params).changes;
+}
+
 export function deleteTask(id: number): void {
   db.prepare(`DELETE FROM tasks WHERE id = ?`).run(id);
 }

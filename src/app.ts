@@ -16,6 +16,7 @@ import {
   deleteTask,
   dismissEmailSuggestion,
   findUserWithHashByEmail,
+  completeOpenTasksWithTitle,
   getTaskDone,
   getTaskTitle,
   getUserDeskPetState,
@@ -452,7 +453,16 @@ app.post("/tasks/:id/toggle", (req, res) => {
     const before = getTaskDone(id);
     if (before === 0) completedTitle = getTaskTitle(id);
     toggleTask(id);
-    if (before === 0) completedTask = true;
+    if (before === 0) {
+      completedTask = true;
+      if (completedTitle && day.success) {
+        const lookbackDays = [
+          day.data,
+          ...previousCalendarDays(day.data, CARRY_OVER_LOOKBACK_DAYS),
+        ];
+        completeOpenTasksWithTitle(completedTitle, lookbackDays, id);
+      }
+    }
   }
   if (day.success) {
     res.redirect(

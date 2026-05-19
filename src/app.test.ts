@@ -210,6 +210,25 @@ describe("task routes and desk-buddy redirect flashes", () => {
     expect(params.get("taskTitle")).toBe("Finish me");
   });
 
+  it("POST /tasks/:id/toggle completes matching titles in the 14-day lookback", async () => {
+    const { addTask, listTasks } = await import("./db.js");
+    const day = "2026-10-12";
+    addTask("2026-10-01", "Shared goal", null);
+    addTask("2026-10-08", "Shared goal", null);
+    addTask("2026-10-08", "Different", null);
+    addTask("2026-09-20", "Shared goal", null);
+    addTask(day, "Shared goal", null);
+    const [row] = listTasks(day);
+
+    await request(app).post(`/tasks/${row.id}/toggle`).type("form").send({ day }).expect(302);
+
+    expect(listTasks("2026-10-01")[0].done).toBe(1);
+    expect(listTasks("2026-10-08").find((t) => t.title === "Shared goal")!.done).toBe(1);
+    expect(listTasks("2026-10-08").find((t) => t.title === "Different")!.done).toBe(0);
+    expect(listTasks("2026-09-20")[0].done).toBe(0);
+    expect(listTasks(day)[0].done).toBe(1);
+  });
+
   it("POST /tasks/:id/toggle marking open does not add completion flash", async () => {
     const { addTask, listTasks, toggleTask } = await import("./db.js");
     const day = "2026-10-06";
