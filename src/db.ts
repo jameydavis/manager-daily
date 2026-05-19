@@ -290,9 +290,21 @@ export function dismissEmailSuggestion(fingerprint: string): void {
 }
 
 export function carryOverIncomplete(fromDay: string, toDay: string): number {
+  return carryOverIncompleteFromDays([fromDay], toDay);
+}
+
+/** Copies open tasks from each source day onto `toDay` (oldest day first). */
+export function carryOverIncompleteFromDays(fromDays: string[], toDay: string): number {
+  const days = [...new Set(fromDays.filter((d) => d && d !== toDay))];
+  if (!days.length) return 0;
+
+  const placeholders = days.map(() => "?").join(", ");
   const rows = db
-    .prepare(`SELECT title, notes FROM tasks WHERE day = ? AND done = 0`)
-    .all(fromDay) as { title: string; notes: string | null }[];
+    .prepare(
+      `SELECT title, notes FROM tasks WHERE day IN (${placeholders}) AND done = 0 ORDER BY day ASC, id ASC`
+    )
+    .all(...days) as { title: string; notes: string | null }[];
+
   let max = (
     db.prepare(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM tasks WHERE day = ?`).get(toDay) as {
       m: number;

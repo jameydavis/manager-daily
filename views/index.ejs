@@ -123,12 +123,9 @@
         <button type="submit" class="secondary">Add “Follow up from Email” task</button>
       </form>
 
-      <% if (prevDay) { %>
-        <form method="post" action="/carry-over" class="carry">
-          <input type="hidden" name="day" value="<%= selected %>" />
-          <button type="submit" class="secondary">Carry over incomplete from <%= prevDay %></button>
-        </form>
-        <% } %>
+      <form method="post" action="/carry-over" class="carry">
+        <button type="submit" class="secondary">Carry Over Incomplete Tasks</button>
+      </form>
 
           <ul class="tasks">
             <% if (!tasks.length) { %>

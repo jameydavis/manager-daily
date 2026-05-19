@@ -27,6 +27,9 @@ describe("homeForDay", () => {
     expect(homeForDay("2026-05-20", { create: 1, complete: 2 })).toBe(
       "/?date=2026-05-20&deskPetCreate=1&deskPetComplete=2"
     );
+    const completed = homeForDay("2026-05-20", { complete: 1, completedTitle: "Ship it" });
+    expect(completed).toContain("deskPetComplete=1");
+    expect(new URLSearchParams(completed.split("?")[1]).get("taskTitle")).toBe("Ship it");
     expect(homeForDay("2026-05-20", { create: 999 })).toBe(
       `/?date=2026-05-20&deskPetCreate=${MAX_DESK_PET_QUEUE}`
     );

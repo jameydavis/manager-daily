@@ -4,6 +4,11 @@
 (function () {
   const DEFAULT_MS = 4500;
 
+  /** Matches `user-settings.js` (`managerDailyDeskPetEnabled`); default visible when unset. */
+  function isDeskPetVisible() {
+    return document.documentElement.dataset.deskPet !== "off";
+  }
+
   /** Move toasts away from the desk pet: pet bottom-left → stack bottom-right; any other corner → bottom-left. */
   function syncAnchorFromDeskPet() {
     const stack = document.getElementById("toast-stack");
@@ -116,7 +121,7 @@
     timer = window.setTimeout(remove, durationMs);
   }
 
-  window.ManagerDailyToasts = { show, syncAnchorFromDeskPet };
+  window.ManagerDailyToasts = { show, syncAnchorFromDeskPet, isDeskPetVisible };
 
   (function consumeTaskRemovedFromUrl() {
     try {

@@ -13,7 +13,10 @@ export function safeRedirectPath(raw: unknown, fallback = "/"): string {
 }
 
 /** Build `/?date=…` with optional desk-buddy gamify query params (stripped client-side after use). */
-export function homeForDay(day: string, deskPet?: { create?: number; complete?: number }): string {
+export function homeForDay(
+  day: string,
+  deskPet?: { create?: number; complete?: number; completedTitle?: string | null }
+): string {
   const u = new URL("http://_/");
   u.pathname = "/";
   u.searchParams.set("date", day);
@@ -28,6 +31,10 @@ export function homeForDay(day: string, deskPet?: { create?: number; complete?: 
       "deskPetComplete",
       String(Math.min(MAX_DESK_PET_QUEUE, Math.floor(deskPet.complete)))
     );
+    if (deskPet.completedTitle) {
+      const t = deskPet.completedTitle.trim().slice(0, MAX_TASK_TITLE_FLASH_LEN);
+      if (t) u.searchParams.set("taskTitle", t);
+    }
   }
   return `${u.pathname}${u.search}`;
 }

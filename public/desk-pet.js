@@ -47,6 +47,13 @@
   const reviveCompactBtn = document.getElementById("desk-pet-revive-compact-btn");
   const reviveCompactPct = document.getElementById("desk-pet-revive-compact-pct");
 
+  function deskPetVisible() {
+    if (typeof window.ManagerDailyToasts?.isDeskPetVisible === "function") {
+      return window.ManagerDailyToasts.isDeskPetVisible();
+    }
+    return document.documentElement.dataset.deskPet !== "off";
+  }
+
   if (
     !root ||
     !alivePanel ||
@@ -393,8 +400,12 @@
   ];
   const IDLE_ANIM_CLASSES = IDLE_ANIM_SPECS.map((s) => s.cls);
 
+  const FEED_FOOD_ITEMS = ["🍎", "🍪", "🥕", "🍇", "🧀", "🍞", "🥐", "🍓", "🥨", "🍌", "🫐", "🥯"];
+  const FEED_FOOD_FLIGHT_MS = 720;
+
   let tickleAnimTimer = 0;
   let playActive = false;
+  let feedingActive = false;
   let playEndTimer = 0;
   let idleSchedulerTimer = 0;
   let idleAnimEndTimer = 0;
@@ -850,6 +861,7 @@
   function isCreatureBusy() {
     return (
       playActive ||
+      feedingActive ||
       creature.classList.contains("desk-pet-creature--ball-play") ||
       creature.classList.contains("desk-pet-creature--munch") ||
       creature.classList.contains("desk-pet-creature--refuse-feed") ||
@@ -912,6 +924,76 @@
       creature.classList.remove("desk-pet-creature--tickle", choice.spec);
       tickleAnimTimer = 0;
     }, choice.ms);
+  }
+
+  /** @returns {{ x: number; y: number }} */
+  function getMouthPointInStage() {
+    const mouth = creature.querySelector(".desk-pet-mouth");
+    const target = mouth || creature.querySelector(".desk-pet-face") || creature;
+    const stageRect = stageEl.getBoundingClientRect();
+    const r = target.getBoundingClientRect();
+    return {
+      x: r.left + r.width / 2 - stageRect.left,
+      y: r.top + r.height / 2 - stageRect.top,
+    };
+  }
+
+  /** @param {number} width @param {number} height @returns {{ x: number; y: number }} */
+  function randomFoodSpawnPoint(width, height) {
+    const pad = 6;
+    const spots = [
+      { x: pad, y: height * 0.72 },
+      { x: width - pad, y: height * 0.68 },
+      { x: width * 0.18, y: height - pad },
+      { x: width * 0.82, y: height - pad },
+      { x: width * 0.12, y: height * 0.38 },
+      { x: width * 0.88, y: height * 0.42 },
+    ];
+    return spots[Math.floor(Math.random() * spots.length)];
+  }
+
+  /**
+   * Random snack flies into the mouth, then `onArrived` runs (meter bump + hearts).
+   * @param {() => void} onArrived
+   */
+  function playFeedFoodFlight(onArrived) {
+    if (!stageEl) {
+      onArrived();
+      return;
+    }
+    const stageRect = stageEl.getBoundingClientRect();
+    if (stageRect.width < 8 || stageRect.height < 8) {
+      onArrived();
+      return;
+    }
+
+    const start = randomFoodSpawnPoint(stageRect.width, stageRect.height);
+    const mouth = getMouthPointInStage();
+    const food = document.createElement("span");
+    food.className = "desk-pet-food";
+    food.setAttribute("aria-hidden", "true");
+    food.textContent = FEED_FOOD_ITEMS[Math.floor(Math.random() * FEED_FOOD_ITEMS.length)];
+    food.style.left = `${start.x}px`;
+    food.style.top = `${start.y}px`;
+    food.style.setProperty("--food-dx", `${mouth.x - start.x}px`);
+    food.style.setProperty("--food-dy", `${mouth.y - start.y}px`);
+    food.style.setProperty("--food-spin-start", `${-14 - Math.random() * 22}deg`);
+    food.style.setProperty("--food-spin-end", `${4 + Math.random() * 16}deg`);
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      food.remove();
+      onArrived();
+    };
+
+    food.addEventListener("animationend", finish, { once: true });
+    stageEl.appendChild(food);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => food.classList.add("desk-pet-food--fly"));
+    });
+    window.setTimeout(finish, FEED_FOOD_FLIGHT_MS + 80);
   }
 
   function spawnFeedHearts() {
@@ -978,30 +1060,11 @@
     render();
   }
 
-  /** @param {{ source?: string }} [opts] Use `source: "manual"` for the Feed button; `taskCreated` / `taskCompleted` for gamified feeds. */
-  function feed(opts) {
-    opts = opts || {};
-    const source = typeof opts.source === "string" ? opts.source : undefined;
-    if (playActive) return;
-    applyTimeDecay();
-    if (state.expired) return;
-
-    if (state.fullness >= 100) {
-      anim("desk-pet-creature--refuse-feed", 1150);
-      setStatus("No more—I'm stuffed!", 2400);
-      window.dispatchEvent(new CustomEvent("deskPet:feedRefused", { detail: { ...state } }));
-      if (typeof window.ManagerDailyToasts !== "undefined" && typeof window.ManagerDailyToasts.show === "function") {
-        window.ManagerDailyToasts.show({
-          message: `${getPetDisplayName()} is full, great job!`,
-          variant: "pet",
-        });
-      }
-      return;
-    }
-
-    const fullnessBefore = state.fullness;
-    const fullnessAfter = clamp(Math.floor(fullnessBefore + 22), 0, 100);
-    const delta = fullnessAfter - fullnessBefore;
+  /**
+   * @param {{ source?: string; fullnessAfter: number; delta: number }} ctx
+   */
+  function finishFeedCelebration(ctx) {
+    const { source, fullnessAfter, delta } = ctx;
     state.fullness = fullnessAfter;
     state.feedCount += 1;
     touchFullnessClock();
@@ -1009,9 +1072,9 @@
     save();
     if (state.fullness > 10) dismissDecayPanelAnimations();
     anim("desk-pet-creature--munch", 1100);
-    spawnFeedHearts();
-    setStatus("Yum!", 1800);
     render();
+    setStatus("Yum!", 1800);
+    spawnFeedHearts();
     window.dispatchEvent(
       new CustomEvent("deskPet:feed", {
         detail: source ? { ...state, source } : { ...state },
@@ -1019,6 +1082,7 @@
     );
 
     if (
+      deskPetVisible() &&
       typeof window.ManagerDailyToasts !== "undefined" &&
       typeof window.ManagerDailyToasts.show === "function"
     ) {
@@ -1037,6 +1101,45 @@
         });
       }
     }
+
+    window.setTimeout(() => {
+      feedingActive = false;
+    }, 1150);
+  }
+
+  /** @param {{ source?: string }} [opts] Use `source: "manual"` for the Feed button; `taskCreated` / `taskCompleted` for gamified feeds. */
+  function feed(opts) {
+    opts = opts || {};
+    const source = typeof opts.source === "string" ? opts.source : undefined;
+    if (playActive || feedingActive) return;
+    applyTimeDecay();
+    if (state.expired) return;
+
+    if (state.fullness >= 100) {
+      anim("desk-pet-creature--refuse-feed", 1150);
+      setStatus("No more—I'm stuffed!", 2400);
+      window.dispatchEvent(new CustomEvent("deskPet:feedRefused", { detail: { ...state } }));
+      if (
+        deskPetVisible() &&
+        typeof window.ManagerDailyToasts !== "undefined" &&
+        typeof window.ManagerDailyToasts.show === "function"
+      ) {
+        window.ManagerDailyToasts.show({
+          message: `${getPetDisplayName()} is full, great job!`,
+          variant: "pet",
+        });
+      }
+      return;
+    }
+
+    const fullnessBefore = state.fullness;
+    const fullnessAfter = clamp(Math.floor(fullnessBefore + 22), 0, 100);
+    const delta = fullnessAfter - fullnessBefore;
+    const ctx = { source, fullnessAfter, delta };
+
+    feedingActive = true;
+    cancelIdleScheduler();
+    playFeedFoodFlight(() => finishFeedCelebration(ctx));
   }
 
   function tickle() {
@@ -1212,6 +1315,7 @@
       function stripGamifyFromUrl() {
         u.searchParams.delete("deskPetCreate");
         u.searchParams.delete("deskPetComplete");
+        u.searchParams.delete("taskTitle");
         const next = `${u.pathname}${u.search}${u.hash}`;
         window.history.replaceState({}, "", next);
       }
@@ -1240,18 +1344,33 @@
           then();
           return;
         }
+        const rawCompletedTitle = u.searchParams.get("taskTitle");
+        const completedTitle =
+          typeof rawCompletedTitle === "string" ? rawCompletedTitle.trim() : "";
         stripGamifyFromUrl();
         if (createN > 0) {
           show({
-            message: `You created a task. ${name} is happy!`,
+            message: deskPetVisible()
+              ? `You created a task. ${name} is happy!`
+              : "Task created.",
             variant: "task-created",
           });
         }
         if (completeN > 0) {
           const delayMs = createN > 0 ? 520 : 0;
           window.setTimeout(() => {
+            let message;
+            if (completedTitle) {
+              message = deskPetVisible()
+                ? `Completed “${completedTitle}”. ${name} loves it!`
+                : `Completed “${completedTitle}”.`;
+            } else {
+              message = deskPetVisible()
+                ? `You completed a task. ${name} loves it!`
+                : "Task completed.";
+            }
             show({
-              message: `You completed a task. ${name} loves it!`,
+              message,
               variant: "task-completed",
             });
           }, delayMs);

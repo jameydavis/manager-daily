@@ -73,6 +73,16 @@ describe("db", () => {
     expect(next.map((t) => t.title)).toEqual(["Open"]);
   });
 
+  it("carryOverIncompleteFromDays merges open tasks from multiple days", () => {
+    db.addTask("2026-08-01", "Older", null);
+    db.addTask("2026-08-03", "Newer", null);
+    db.addTask("2026-08-03", "Done", null);
+    db.toggleTask(db.listTasks("2026-08-03").find((t) => t.title === "Done")!.id);
+    const n = db.carryOverIncompleteFromDays(["2026-08-01", "2026-08-03"], "2026-08-10");
+    expect(n).toBe(2);
+    expect(db.listTasks("2026-08-10").map((t) => t.title)).toEqual(["Older", "Newer"]);
+  });
+
   it("dismissEmailSuggestion and listDismissedEmailFingerprints", () => {
     db.dismissEmailSuggestion("mid-123");
     expect(db.listDismissedEmailFingerprints()).toContain("mid-123");

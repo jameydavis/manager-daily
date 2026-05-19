@@ -5,6 +5,7 @@ import {
   today,
   sprintDaysLeftPhrase,
   prevCalendarDay,
+  previousCalendarDays,
   monthGrid,
 } from "./dates.js";
 
@@ -55,6 +56,22 @@ describe("sprintDaysLeftPhrase", () => {
 
   it("returns 0 days left when today is after end", () => {
     expect(sprintDaysLeftPhrase("2026-05-01", "2026-04-28")).toBe("0 days left");
+  });
+});
+
+describe("previousCalendarDays", () => {
+  it("returns the prior N calendar days ending with yesterday", () => {
+    expect(previousCalendarDays("2026-04-15", 3)).toEqual([
+      "2026-04-14",
+      "2026-04-13",
+      "2026-04-12",
+    ]);
+    expect(previousCalendarDays("2026-01-02", 2)).toEqual(["2026-01-01", "2025-12-31"]);
+  });
+
+  it("returns empty for invalid anchor or non-positive count", () => {
+    expect(previousCalendarDays("bad", 14)).toEqual([]);
+    expect(previousCalendarDays("2026-04-15", 0)).toEqual([]);
   });
 });
 

@@ -1672,6 +1672,41 @@ a.report-name:hover {
   transform: translate(calc(-50% + var(--heart-drift, 0px)), 0);
 }
 
+.desk-pet-food {
+  position: absolute;
+  z-index: 6;
+  font-size: 1.4rem;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+  transform: translate(-50%, -50%) scale(0.35);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.desk-pet-food--fly {
+  animation: desk-pet-food-to-mouth 0.72s cubic-bezier(0.33, 0, 0.2, 1) forwards;
+}
+
+@keyframes desk-pet-food-to-mouth {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.45) rotate(var(--food-spin-start, -18deg));
+  }
+
+  78% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--food-dx)), calc(-50% + var(--food-dy))) scale(1.05)
+      rotate(var(--food-spin-end, 8deg));
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--food-dx)), calc(-50% + var(--food-dy))) scale(0.12)
+      rotate(0deg);
+  }
+}
+
 @keyframes desk-pet-heart-rise {
   0% {
     transform: translate(calc(-50% + var(--heart-drift, 0px)), 0.35rem) scale(0.25);

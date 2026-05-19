@@ -10,7 +10,7 @@ import { loginBodySchema, signupBodySchema } from "./authValidation.js";
 import { hashPassword, verifyPassword } from "./passwords.js";
 import {
   addTask,
-  carryOverIncomplete,
+  carryOverIncompleteFromDays,
   createSession,
   createUser,
   deleteTask,
@@ -35,9 +35,13 @@ import {
   monthGrid,
   parseDay,
   prevCalendarDay,
+  previousCalendarDays,
   sprintDaysLeftPhrase,
   today,
 } from "./dates.js";
+
+/** Incomplete tasks from this many calendar days before today are eligible for carry-over. */
+export const CARRY_OVER_LOOKBACK_DAYS = 14;
 import {
   fetchActiveSprintForBoard,
   fetchAgileBoard,
@@ -443,13 +447,20 @@ app.post("/tasks/:id/toggle", (req, res) => {
   const id = Number(req.params.id);
   const day = dayParam.safeParse(req.body.day);
   let completedTask = false;
+  let completedTitle: string | null = null;
   if (Number.isFinite(id)) {
     const before = getTaskDone(id);
+    if (before === 0) completedTitle = getTaskTitle(id);
     toggleTask(id);
     if (before === 0) completedTask = true;
   }
   if (day.success) {
-    res.redirect(homeForDay(day.data, completedTask ? { complete: 1 } : undefined));
+    res.redirect(
+      homeForDay(
+        day.data,
+        completedTask ? { complete: 1, completedTitle } : undefined
+      )
+    );
     return;
   }
   res.redirect(req.get("referer") || "/");
@@ -482,16 +493,11 @@ app.post("/tasks/:id/delete", (req, res) => {
   res.redirect(withTaskRemovedFlash(target, removedTitle));
 });
 
-app.post("/carry-over", (req, res) => {
-  const day = dayParam.safeParse(req.body.day);
-  if (!day.success) {
-    res.redirect("/");
-    return;
-  }
-  const from = prevCalendarDay(day.data);
-  let created = 0;
-  if (from) created = carryOverIncomplete(from, day.data);
-  res.redirect(homeForDay(day.data, created > 0 ? { create: created } : undefined));
+app.post("/carry-over", (_req, res) => {
+  const targetDay = today();
+  const fromDays = previousCalendarDays(targetDay, CARRY_OVER_LOOKBACK_DAYS);
+  const created = carryOverIncompleteFromDays(fromDays, targetDay);
+  res.redirect(homeForDay(targetDay, created > 0 ? { create: created } : undefined));
 });
 
 app.post("/tasks/from-email-paste", (req, res) => {

@@ -38,6 +38,20 @@ export function prevCalendarDay(day: string): string | null {
   return formatDay(d);
 }
 
+/** The `count` calendar days immediately before `anchorDay` (yesterday first). */
+export function previousCalendarDays(anchorDay: string, count: number): string[] {
+  const anchor = parseDay(anchorDay);
+  if (!anchor || count < 1) return [];
+  const n = Math.floor(count);
+  const out: string[] = [];
+  for (let i = 1; i <= n; i++) {
+    const d = new Date(anchor);
+    d.setDate(d.getDate() - i);
+    out.push(formatDay(d));
+  }
+  return out;
+}
+
 export type CalendarCell = {
   day: string;
   label: number;

@@ -49,7 +49,7 @@ Copy **`.env.example`** to **`.env`** and adjust:
 
 - **Pick a day** from the calendar or `?date=YYYY-MM-DD` in the URL.
 - **Tasks:** add title + optional notes, mark done, **Remove** (no confirm—feedback is a **toast**).
-- **Carry over** moves incomplete items from the **previous calendar day** into the day you’re viewing.
+- **Carry over** copies incomplete items from the **last 14 calendar days** onto **today** (then opens today’s view).
 - **Jira panel:** add issues to the selected day when Jira env vars are set.
 - **My team:** loads when Jira is configured and direct reports are set (env or defaults).
 
