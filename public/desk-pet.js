@@ -3,6 +3,9 @@
  */
 (function () {
   const STORAGE_KEY = "managerDailyDeskPet";
+  /** Last sync payload timestamp (ISO); used to merge with server when signed in. */
+  const SYNC_META_KEY = "managerDailyDeskPetSyncMeta";
+  const DESK_PET_API = "/api/desk-pet";
   /** Fullness drops by 10 every wall-clock 5 minutes (proportional between ticks). */
   const MS_DECAY_INTERVAL = 5 * 60 * 1000;
   const FULLNESS_LOST_PER_INTERVAL = 10;
@@ -102,6 +105,7 @@
     "Honey",
     "Butter",
     "Pickle",
+    "Beebo",
     "Coco",
     "Pixel",
     "Bean",
@@ -151,6 +155,7 @@
     } catch {
       /* ignore */
     }
+    scheduleSyncPush();
   }
 
   function getPetDisplayName() {
@@ -265,6 +270,7 @@
     } catch {
       /* ignore */
     }
+    scheduleSyncPush();
   }
 
   /** @returns {(typeof PALETTE_IDS)[number]} */
@@ -298,6 +304,7 @@
     } catch {
       /* ignore */
     }
+    scheduleSyncPush();
   }
 
   applyCornerPref(loadCornerPref());
@@ -427,6 +434,156 @@
   function save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      /* ignore */
+    }
+    scheduleSyncPush();
+  }
+
+  function deskPetSyncEnabled() {
+    return document.documentElement.dataset.deskPetSync === "on";
+  }
+
+  function readSyncMetaUpdatedAt() {
+    try {
+      const raw = localStorage.getItem(SYNC_META_KEY);
+      if (!raw) return "";
+      const parsed = JSON.parse(raw);
+      return typeof parsed.updatedAt === "string" ? parsed.updatedAt : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function writeSyncMetaUpdatedAt(updatedAt) {
+    try {
+      localStorage.setItem(SYNC_META_KEY, JSON.stringify({ updatedAt }));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function parseUpdatedAtMs(iso) {
+    const t = Date.parse(iso);
+    return Number.isFinite(t) ? t : 0;
+  }
+
+  function buildSyncPayload() {
+    const updatedAt = new Date().toISOString();
+    writeSyncMetaUpdatedAt(updatedAt);
+    return {
+      v: 1,
+      game: {
+        fullness: state.fullness,
+        lastFullnessAt: state.lastFullnessAt,
+        tickleCount: state.tickleCount,
+        feedCount: state.feedCount,
+        expired: state.expired,
+        alertedCute: state.alertedCute,
+        alertedUrgent: state.alertedUrgent,
+      },
+      displayName: loadStoredPetName(),
+      corner: loadCornerPref(),
+      palette: loadPalettePref(),
+      uiCollapsed: collapsed,
+      updatedAt,
+    };
+  }
+
+  function applyGameFromSync(game) {
+    if (typeof game.fullness === "number") state.fullness = clamp(game.fullness, 0, 100);
+    if (typeof game.tickleCount === "number") state.tickleCount = Math.max(0, game.tickleCount);
+    if (typeof game.feedCount === "number") state.feedCount = Math.max(0, game.feedCount);
+    if (typeof game.lastFullnessAt === "string" && game.lastFullnessAt) {
+      state.lastFullnessAt = game.lastFullnessAt;
+    }
+    if (typeof game.expired === "boolean") state.expired = game.expired;
+    if (typeof game.alertedCute === "boolean") state.alertedCute = game.alertedCute;
+    if (typeof game.alertedUrgent === "boolean") state.alertedUrgent = game.alertedUrgent;
+    if (state.expired) state.fullness = 0;
+    if (state.fullness <= 0) {
+      state.fullness = 0;
+      state.expired = true;
+    }
+  }
+
+  function applySyncPayload(payload) {
+    if (!payload || payload.v !== 1 || !payload.game) return;
+    applyGameFromSync(payload.game);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      /* ignore */
+    }
+    if (typeof payload.displayName === "string") saveStoredPetName(payload.displayName);
+    if (payload.corner === "br" || payload.corner === "bl" || payload.corner === "tr" || payload.corner === "tl") {
+      saveCornerPref(payload.corner);
+      applyCornerPref(payload.corner);
+      if (cornerSelect) cornerSelect.value = payload.corner;
+    }
+    if (payload.palette && PALETTE_IDS.includes(payload.palette)) {
+      savePalettePref(payload.palette);
+      applyPalettePref(payload.palette);
+      if (paletteSelect) paletteSelect.value = payload.palette;
+    }
+    if (typeof payload.uiCollapsed === "boolean") {
+      collapsed = payload.uiCollapsed;
+      saveUiCollapsed();
+      applyPanelLayout();
+    }
+    if (typeof payload.updatedAt === "string" && payload.updatedAt) {
+      writeSyncMetaUpdatedAt(payload.updatedAt);
+    }
+    applyPetLabels();
+  }
+
+  let applyingRemoteSync = false;
+  let syncPushTimer = 0;
+
+  function scheduleSyncPush() {
+    if (!deskPetSyncEnabled() || applyingRemoteSync) return;
+    if (syncPushTimer) window.clearTimeout(syncPushTimer);
+    syncPushTimer = window.setTimeout(() => {
+      syncPushTimer = 0;
+      pushSyncToServer();
+    }, 600);
+  }
+
+  async function pushSyncToServer() {
+    if (!deskPetSyncEnabled() || applyingRemoteSync) return;
+    try {
+      const payload = buildSyncPayload();
+      await fetch(DESK_PET_API, {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: payload }),
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function mergeDeskPetFromServer() {
+    if (!deskPetSyncEnabled()) return;
+    try {
+      const res = await fetch(DESK_PET_API, { credentials: "same-origin" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const remote = data && data.state;
+      const localAt = readSyncMetaUpdatedAt();
+      if (!remote) {
+        scheduleSyncPush();
+        return;
+      }
+      const remoteAt = typeof remote.updatedAt === "string" ? remote.updatedAt : "";
+      if (parseUpdatedAtMs(remoteAt) > parseUpdatedAtMs(localAt)) {
+        applyingRemoteSync = true;
+        applySyncPayload(remote);
+        applyingRemoteSync = false;
+      } else if (parseUpdatedAtMs(localAt) > parseUpdatedAtMs(remoteAt)) {
+        scheduleSyncPush();
+      }
     } catch {
       /* ignore */
     }
@@ -609,6 +766,7 @@
     } catch {
       /* ignore */
     }
+    scheduleSyncPush();
   }
 
   function applyPanelLayout() {
@@ -988,17 +1146,22 @@
     if (document.visibilityState === "visible") tick();
   });
 
-  load();
-  applyTimeDecay();
-  resetAlertFlagsIfRecovered();
-  save();
-  maybeSteadyStateAlertsOnLoad();
+  async function bootDeskPet() {
+    load();
+    await mergeDeskPetFromServer();
+    applyTimeDecay();
+    resetAlertFlagsIfRecovered();
+    save();
+    maybeSteadyStateAlertsOnLoad();
 
-  renderVisibility();
-  render();
-  cancelIdleScheduler();
-  if (!state.expired && !collapsed) scheduleIdleAnim();
-  window.setInterval(tick, TICK_MS);
+    renderVisibility();
+    render();
+    cancelIdleScheduler();
+    if (!state.expired && !collapsed) scheduleIdleAnim();
+    window.setInterval(tick, TICK_MS);
+  }
+
+  bootDeskPet();
 
   window.DeskPet = {
     getState: () => ({ ...state }),

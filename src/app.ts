@@ -18,12 +18,15 @@ import {
   findUserWithHashByEmail,
   getTaskDone,
   getTaskTitle,
+  getUserDeskPetState,
   listDismissedEmailFingerprints,
   listTasks,
   normalizeEmail,
   toggleTask,
+  upsertUserDeskPetState,
   type TaskRow,
 } from "./db.js";
+import { deskPetSyncStateSchema, parseDeskPetSyncState } from "./deskPetState.js";
 import { DEFAULT_JIRA_JQL, getJiraEnv, searchIssues } from "./jira.js";
 import { mergeJiraCredentialsIntoDotenv } from "./dotenvMerge.js";
 import { verifyJiraSignupCredentials } from "./jiraSignupVerify.js";
@@ -66,6 +69,7 @@ app.set("views", path.join(process.cwd(), "views"));
 app.locals.authUserDisplayLabel = authUserDisplayLabel;
 
 app.use(cookieParser());
+app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(attachAuthUser);
 app.use(express.static(path.join(process.cwd(), "public")));
@@ -249,6 +253,44 @@ app.post("/auth/logout", (req, res) => {
   const token = req.cookies?.[SESSION_COOKIE];
   logoutSession(res, typeof token === "string" ? token : undefined);
   res.redirect("/login");
+});
+
+app.get("/api/desk-pet", (req, res) => {
+  const user = req.authUser;
+  if (!user) {
+    res.status(401).json({ error: "Sign in to sync desk buddy." });
+    return;
+  }
+  const row = getUserDeskPetState(user.id);
+  if (!row) {
+    res.json({ state: null, updatedAt: null });
+    return;
+  }
+  try {
+    const parsed = parseDeskPetSyncState(JSON.parse(row.state_json));
+    if (!parsed) {
+      res.json({ state: null, updatedAt: row.updated_at });
+      return;
+    }
+    res.json({ state: parsed, updatedAt: row.updated_at });
+  } catch {
+    res.json({ state: null, updatedAt: row.updated_at });
+  }
+});
+
+app.put("/api/desk-pet", (req, res) => {
+  const user = req.authUser;
+  if (!user) {
+    res.status(401).json({ error: "Sign in to sync desk buddy." });
+    return;
+  }
+  const body = z.object({ state: deskPetSyncStateSchema }).safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid desk buddy state." });
+    return;
+  }
+  upsertUserDeskPetState(user.id, JSON.stringify(body.data.state));
+  res.json({ ok: true, updatedAt: body.data.state.updatedAt });
 });
 
 app.get("/", async (req, res, next) => {

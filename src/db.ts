@@ -72,6 +72,14 @@ db.exec(`
 db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_desk_pet_state (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    state_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 export type AuthUserRow = {
   id: number;
   email: string;
@@ -185,6 +193,32 @@ export function deleteSession(token: string): void {
 function purgeExpiredSessions(): void {
   const now = Math.floor(Date.now() / 1000);
   db.prepare(`DELETE FROM sessions WHERE expires_at <= ?`).run(now);
+}
+
+export type UserDeskPetStateRow = {
+  state_json: string;
+  updated_at: string;
+};
+
+export function getUserDeskPetState(userId: number): UserDeskPetStateRow | null {
+  if (!Number.isFinite(userId)) return null;
+  const row = db
+    .prepare(`SELECT state_json, updated_at FROM user_desk_pet_state WHERE user_id = ?`)
+    .get(userId) as UserDeskPetStateRow | undefined;
+  return row ?? null;
+}
+
+export function upsertUserDeskPetState(userId: number, stateJson: string): void {
+  if (!Number.isFinite(userId)) return;
+  const json = stateJson.trim();
+  if (!json) return;
+  db.prepare(
+    `INSERT INTO user_desk_pet_state (user_id, state_json, updated_at)
+     VALUES (?, ?, datetime('now'))
+     ON CONFLICT(user_id) DO UPDATE SET
+       state_json = excluded.state_json,
+       updated_at = datetime('now')`
+  ).run(userId, json);
 }
 
 export type TaskRow = {

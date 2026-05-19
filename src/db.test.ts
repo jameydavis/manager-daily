@@ -79,4 +79,20 @@ describe("db", () => {
     db.dismissEmailSuggestion("mid-123");
     expect(db.listDismissedEmailFingerprints().filter((f) => f === "mid-123")).toHaveLength(1);
   });
+
+  it("upsertUserDeskPetState and getUserDeskPetState round-trip", () => {
+    const userId = db.createUser(
+      `desk-pet-${Date.now()}@example.com`,
+      "hash",
+      null,
+      null
+    );
+    expect(db.getUserDeskPetState(userId)).toBeNull();
+    const json = JSON.stringify({ v: 1, game: { fullness: 50 } });
+    db.upsertUserDeskPetState(userId, json);
+    const row = db.getUserDeskPetState(userId);
+    expect(row?.state_json).toBe(json);
+    db.upsertUserDeskPetState(userId, JSON.stringify({ v: 1, game: { fullness: 80 } }));
+    expect(JSON.parse(db.getUserDeskPetState(userId)!.state_json).game.fullness).toBe(80);
+  });
 });

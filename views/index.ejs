@@ -22,6 +22,9 @@
       if (localStorage.getItem('managerDailyTasksCompletedBottom') === '1') {
         document.cookie = 'managerDailyTasksCompletedBottom=1; path=/; max-age=' + (86400 * 400) + '; SameSite=Lax';
       }
+      <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+      document.documentElement.dataset.deskPetSync = 'on';
+      <% } %>
     } catch (e) { /* ignore */ }
   </script>
   <header class="header">

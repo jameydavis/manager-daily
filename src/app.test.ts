@@ -94,4 +94,50 @@ describe("buildApp HTTP", () => {
 
     expect(res.headers["set-cookie"]?.some((c) => c.startsWith("md_session="))).toBe(true);
   });
+
+  it("GET /api/desk-pet requires auth and returns saved state", async () => {
+    await request(app).get("/api/desk-pet").expect(401);
+
+    const { createUser } = await import("./db.js");
+    const { hashPassword } = await import("./passwords.js");
+    const email = `desk-pet-api-${Date.now()}@example.com`;
+    createUser(email, hashPassword("sync-test-pass"), "Desk", "Pet");
+
+    const login = await request(app)
+      .post("/auth/login")
+      .type("form")
+      .send({ email, password: "sync-test-pass", redirect: "/" })
+      .expect(302);
+    const cookie = login.headers["set-cookie"];
+
+    const empty = await request(app).get("/api/desk-pet").set("Cookie", cookie).expect(200);
+    expect(empty.body.state).toBeNull();
+
+    const payload = {
+      v: 1,
+      game: {
+        fullness: 88,
+        lastFullnessAt: "2026-05-16T10:00:00.000Z",
+        tickleCount: 0,
+        feedCount: 1,
+        expired: false,
+        alertedCute: false,
+        alertedUrgent: false,
+      },
+      displayName: "Beebo",
+      corner: "bl",
+      palette: "ocean",
+      uiCollapsed: true,
+      updatedAt: "2026-05-16T10:00:00.000Z",
+    };
+
+    await request(app)
+      .put("/api/desk-pet")
+      .set("Cookie", cookie)
+      .send({ state: payload })
+      .expect(200);
+
+    const got = await request(app).get("/api/desk-pet").set("Cookie", cookie).expect(200);
+    expect(got.body.state).toMatchObject(payload);
+  });
 });
