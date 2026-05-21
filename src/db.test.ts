@@ -80,6 +80,16 @@ describe("db", () => {
     expect(db.listTasks("2026-07-28")[0].done).toBe(1);
   });
 
+  it("updateUserPasswordHash and deleteSessionsForUser", () => {
+    const email = `pw-${Date.now()}@example.com`;
+    const userId = db.createUser(email, "hash-a", null, null);
+    const token = db.createSession(userId, 3600);
+    db.updateUserPasswordHash(userId, "hash-b");
+    expect(db.findUserWithHashById(userId)!.password_hash).toBe("hash-b");
+    db.deleteSessionsForUser(userId);
+    expect(db.consumeAndValidateSession(token)).toBeNull();
+  });
+
   it("deleteTask removes row", () => {
     db.addTask("2026-04-03", "Gone", null);
     const [row] = db.listTasks("2026-04-03");

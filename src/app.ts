@@ -5,8 +5,22 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import { z } from "zod";
 import { authUserDisplayLabel } from "./authTypes.js";
-import { attachAuthUser, logoutSession, setSessionCookie, SESSION_COOKIE, SESSION_TTL_SECONDS } from "./authMiddleware.js";
-import { loginBodySchema, signupBodySchema } from "./authValidation.js";
+import {
+  attachAuthUser,
+  logoutSession,
+  requireAuth,
+  setSessionCookie,
+  SESSION_COOKIE,
+  SESSION_TTL_SECONDS,
+} from "./authMiddleware.js";
+import {
+  changePasswordBodySchema,
+  forgotPasswordBodySchema,
+  loginBodySchema,
+  signupBodySchema,
+} from "./authValidation.js";
+import { authMailConfigured, authMailDevFallbackEnabled } from "./authMail.js";
+import { changeUserPassword, requestPasswordReset } from "./passwordReset.js";
 import { hashPassword, verifyPassword } from "./passwords.js";
 import {
   addTask,
@@ -258,6 +272,108 @@ app.post("/auth/logout", (req, res) => {
   const token = req.cookies?.[SESSION_COOKIE];
   logoutSession(res, typeof token === "string" ? token : undefined);
   res.redirect("/login");
+});
+
+app.get("/forgot-password", (req, res) => {
+  if (req.authUser) {
+    res.redirect("/");
+    return;
+  }
+  res.render("forgot-password", {
+    errors: null as string[] | null,
+    success: null as string | null,
+    formEmail: "",
+    mailConfigured: authMailConfigured() || authMailDevFallbackEnabled(),
+  });
+});
+
+app.post("/auth/forgot-password", async (req, res, next) => {
+  try {
+    if (req.authUser) {
+      res.redirect("/");
+      return;
+    }
+    const parsed = forgotPasswordBodySchema.safeParse({ email: req.body.email });
+    const formEmail = typeof req.body.email === "string" ? req.body.email : "";
+    const mailConfigured = authMailConfigured() || authMailDevFallbackEnabled();
+    if (!parsed.success) {
+      res.status(400).render("forgot-password", {
+        errors: parsed.error.issues.map((i) => i.message),
+        success: null,
+        formEmail,
+        mailConfigured,
+      });
+      return;
+    }
+    if (!mailConfigured) {
+      res.status(503).render("forgot-password", {
+        errors: [
+          "Password reset email is not configured on this server. Ask your administrator to set AUTH_SMTP_* variables.",
+        ],
+        success: null,
+        formEmail,
+        mailConfigured: false,
+      });
+      return;
+    }
+    const result = await requestPasswordReset(parsed.data.email);
+    if (!result.ok) {
+      res.status(503).render("forgot-password", {
+        errors: [result.message],
+        success: null,
+        formEmail: parsed.data.email,
+        mailConfigured,
+      });
+      return;
+    }
+    res.render("forgot-password", {
+      errors: null,
+      success: result.message,
+      formEmail: "",
+      mailConfigured,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get("/account/password", requireAuth, (req, res) => {
+  res.render("change-password", {
+    errors: null as string[] | null,
+    success: null as string | null,
+  });
+});
+
+app.post("/auth/change-password", requireAuth, (req, res) => {
+  const parsed = changePasswordBodySchema.safeParse({
+    currentPassword: req.body.currentPassword,
+    newPassword: req.body.newPassword,
+    confirmPassword: req.body.confirmPassword,
+  });
+  if (!parsed.success) {
+    res.status(400).render("change-password", {
+      errors: parsed.error.issues.map((i) => i.message),
+      success: null,
+    });
+    return;
+  }
+  const user = req.authUser!;
+  const result = changeUserPassword(
+    user.id,
+    parsed.data.currentPassword,
+    parsed.data.newPassword
+  );
+  if (!result.ok) {
+    res.status(400).render("change-password", {
+      errors: [result.message],
+      success: null,
+    });
+    return;
+  }
+  res.render("change-password", {
+    errors: null,
+    success: "Your password has been updated.",
+  });
 });
 
 app.get("/api/desk-pet", (req, res) => {

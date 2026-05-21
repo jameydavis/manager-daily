@@ -58,3 +58,12 @@ export function logoutSession(res: import("express").Response, token: string | u
   if (token) deleteSession(token);
   clearSessionCookie(res);
 }
+
+export const requireAuth: RequestHandler = (req, res, next) => {
+  if (req.authUser) {
+    next();
+    return;
+  }
+  const path = req.originalUrl || "/";
+  res.redirect(`/login?redirect=${encodeURIComponent(path)}`);
+};

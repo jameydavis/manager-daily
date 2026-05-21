@@ -108,28 +108,44 @@ export function createUser(
   return Number(r.lastInsertRowid);
 }
 
-export function findUserWithHashByEmail(email: string): {
+export type UserWithPasswordHashRow = {
   id: number;
   email: string;
   password_hash: string;
   first_name: string | null;
   last_name: string | null;
-} | null {
+};
+
+export function findUserWithHashByEmail(email: string): UserWithPasswordHashRow | null {
   const e = normalizeEmail(email);
   const row = db
     .prepare(
       `SELECT id, email, password_hash, first_name, last_name FROM users WHERE email = ?`
     )
-    .get(e) as
-    | {
-        id: number;
-        email: string;
-        password_hash: string;
-        first_name: string | null;
-        last_name: string | null;
-      }
-    | undefined;
+    .get(e) as UserWithPasswordHashRow | undefined;
   return row ?? null;
+}
+
+export function findUserWithHashById(id: number): UserWithPasswordHashRow | null {
+  if (!Number.isFinite(id)) return null;
+  const row = db
+    .prepare(
+      `SELECT id, email, password_hash, first_name, last_name FROM users WHERE id = ?`
+    )
+    .get(id) as UserWithPasswordHashRow | undefined;
+  return row ?? null;
+}
+
+export function updateUserPasswordHash(userId: number, passwordHash: string): void {
+  if (!Number.isFinite(userId)) return;
+  const hash = passwordHash.trim();
+  if (!hash) return;
+  db.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`).run(hash, userId);
+}
+
+export function deleteSessionsForUser(userId: number): void {
+  if (!Number.isFinite(userId)) return;
+  db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(userId);
 }
 
 export function findAuthUserById(id: number): AuthUserRow | null {

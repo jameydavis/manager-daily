@@ -38,6 +38,12 @@ describe("buildApp HTTP", () => {
   it("GET /login renders for guests", async () => {
     const res = await request(app).get("/login").expect(200);
     expect(res.text).toMatch(/login|email/i);
+    expect(res.text).toMatch(/forgot password/i);
+  });
+
+  it("GET /forgot-password renders", async () => {
+    const res = await request(app).get("/forgot-password").expect(200);
+    expect(res.text).toMatch(/temporary password/i);
   });
 
   it("GET / returns calendar HTML", async () => {
@@ -78,6 +84,41 @@ describe("buildApp HTTP", () => {
       .expect(302);
     expect(res.headers.location).toContain("date=2026-06-20");
     expect(res.headers.location).toContain("deskPetCreate=1");
+  });
+
+  it("POST /auth/change-password updates password when signed in", async () => {
+    const { createUser } = await import("./db.js");
+    const { hashPassword, verifyPassword } = await import("./passwords.js");
+    const { findUserWithHashByEmail } = await import("./db.js");
+    const email = `change-pw-${Date.now()}@example.com`;
+    createUser(email, hashPassword("start-pass-9"), "A", "B");
+
+    const login = await request(app)
+      .post("/auth/login")
+      .type("form")
+      .send({ email, password: "start-pass-9", redirect: "/" })
+      .expect(302);
+    const cookie = login.headers["set-cookie"];
+
+    await request(app)
+      .post("/auth/change-password")
+      .set("Cookie", cookie)
+      .type("form")
+      .send({
+        currentPassword: "start-pass-9",
+        newPassword: "updated-pass-9",
+        confirmPassword: "updated-pass-9",
+      })
+      .expect(200);
+
+    const row = findUserWithHashByEmail(email)!;
+    expect(verifyPassword("updated-pass-9", row.password_hash)).toBe(true);
+
+    await request(app)
+      .post("/auth/login")
+      .type("form")
+      .send({ email, password: "updated-pass-9", redirect: "/" })
+      .expect(302);
   });
 
   it("POST /auth/login sets session cookie when credentials match", async () => {

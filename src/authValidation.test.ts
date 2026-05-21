@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { atlassianSiteSchema, loginBodySchema, signupBodySchema } from "./authValidation.js";
+import {
+  atlassianSiteSchema,
+  changePasswordBodySchema,
+  forgotPasswordBodySchema,
+  loginBodySchema,
+  signupBodySchema,
+} from "./authValidation.js";
 
 const validSignupBase = {
   email: "a@example.com",
@@ -59,6 +65,32 @@ describe("atlassianSiteSchema", () => {
 describe("loginBodySchema", () => {
   it("accepts email and password", () => {
     const r = loginBodySchema.safeParse({ email: "x@example.com", password: "anything" });
+    expect(r.success).toBe(true);
+  });
+});
+
+describe("forgotPasswordBodySchema", () => {
+  it("accepts a valid email", () => {
+    expect(forgotPasswordBodySchema.safeParse({ email: "a@example.com" }).success).toBe(true);
+  });
+});
+
+describe("changePasswordBodySchema", () => {
+  it("requires matching confirmation", () => {
+    const r = changePasswordBodySchema.safeParse({
+      currentPassword: "oldpass9",
+      newPassword: "newpass9",
+      confirmPassword: "newpass8",
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("accepts valid change payload", () => {
+    const r = changePasswordBodySchema.safeParse({
+      currentPassword: "oldpass9",
+      newPassword: "newpass9",
+      confirmPassword: "newpass9",
+    });
     expect(r.success).toBe(true);
   });
 });

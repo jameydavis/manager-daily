@@ -19,7 +19,7 @@ npm run dev
 Open **http://127.0.0.1:3000** (or whatever **`PORT`** you set).
 
 - **First time:** use **Sign up** to create an account. Signup can also write Jira fields into `.env`; if so, **restart the server** so those variables load.
-- **Sign in** from `/login` when returning.
+- **Sign in** from `/login` when returning. **Forgot password?** emails a temporary password (configure **`AUTH_SMTP_*`** in `.env`). After sign-in, change it under **Settings → Change password**.
 
 ### Production build
 
@@ -39,7 +39,7 @@ Copy **`.env.example`** to **`.env`** and adjust:
 | **`PORT`** | Server port (default `3000`). |
 | **`TZ`** | Process timezone for “today” and calendar logic (see `.env.example`). |
 | **`DATA_DIR`** | SQLite directory (default `./data`). Database file: `manager-daily.db`. |
-| **Auth** | `SESSION_TTL_SECONDS`, `BCRYPT_ROUNDS`. Set **`NODE_ENV=production`** so session cookies use **`Secure`**. |
+| **Auth** | `SESSION_TTL_SECONDS`, `BCRYPT_ROUNDS`. Set **`NODE_ENV=production`** so session cookies use **`Secure`**. Forgot-password email: **`AUTH_SMTP_*`**, **`AUTH_MAIL_FROM`**, **`APP_BASE_URL`**. |
 | **Sprint shading** | `SPRINT_START` / `SPRINT_END` (YYYY-MM-DD), or rely on Jira board sprint below. |
 | **Jira** | `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`, `ATLASSIAN_SITE`, `JIRA_BOARD_ID`, optional `JIRA_JQL`, `JIRA_MAX_RESULTS`. |
 | **Direct reports** | `JIRA_DIRECT_REPORTS` (comma/newline list; optional `Name|accountId`). |

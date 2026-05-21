@@ -59,6 +59,11 @@
         <span>Move completed tasks to the bottom</span>
       </label>
       <p class="user-settings-hint">When on, open tasks stay at the top of each day’s list (also after reload).</p>
+      <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+        <p class="user-settings-hint user-settings-hint--after">
+          <a class="link" href="/account/password">Change password</a>
+        </p>
+      <% } %>
     </div>
     <div class="user-settings-foot">
       <button type="button" class="secondary" id="user-settings-done">Done</button>

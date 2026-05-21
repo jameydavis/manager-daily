@@ -38,6 +38,7 @@
   const btnPlay = document.getElementById("desk-pet-play");
   const stageEl = document.getElementById("desk-pet-stage");
   const playBall = document.getElementById("desk-pet-play-ball");
+  const playRope = document.getElementById("desk-pet-play-rope");
   const fxLayer = document.getElementById("desk-pet-fx");
   const aliveExpand = document.getElementById("desk-pet-alive-expand");
   const aliveCompact = document.getElementById("desk-pet-alive-compact");
@@ -65,6 +66,7 @@
     !btnPlay ||
     !stageEl ||
     !playBall ||
+    !playRope ||
     !aliveExpand ||
     !aliveCompact ||
     !aliveCompactPct ||
@@ -390,6 +392,32 @@
     { spec: "desk-pet-creature--tickle-boing", ms: 920 },
   ];
   const TICKLE_SPEC_CLASSES = TICKLE_SPECS.map((s) => s.spec);
+
+  const PLAY_SPECS = [
+    {
+      spec: "desk-pet-creature--ball-play",
+      ms: PLAY_SESSION_MS,
+      usesBall: true,
+      lines: ["Ball! Get it!", "Chase the shiny!", "Wheee—ball time!"],
+    },
+    {
+      spec: "desk-pet-creature--play-dance",
+      ms: 5800,
+      lines: ["Groove mode!", "Shimmy shimmy!", "Dance party!"],
+    },
+    {
+      spec: "desk-pet-creature--play-rope",
+      ms: 6200,
+      usesRope: true,
+      lines: ["Skip-hop!", "One-two—skip!", "Rope rhythm!"],
+    },
+    {
+      spec: "desk-pet-creature--play-hop",
+      ms: 5400,
+      lines: ["Boing boing!", "Hop-hop-hop!", "Bouncy buddy!"],
+    },
+  ];
+  const PLAY_SPEC_CLASSES = PLAY_SPECS.map((s) => s.spec);
 
   const IDLE_ANIM_SPECS = [
     { cls: "desk-pet-creature--idle-rock", ms: 2200 },
@@ -862,11 +890,15 @@
     clearIdleAnimations();
   }
 
+  /** Play or feed session in progress — block other main interactions. */
+  function isSessionBusy() {
+    return playActive || feedingActive;
+  }
+
   function isCreatureBusy() {
     return (
-      playActive ||
-      feedingActive ||
-      creature.classList.contains("desk-pet-creature--ball-play") ||
+      isSessionBusy() ||
+      PLAY_SPEC_CLASSES.some((c) => creature.classList.contains(c)) ||
       creature.classList.contains("desk-pet-creature--munch") ||
       creature.classList.contains("desk-pet-creature--refuse-feed") ||
       creature.classList.contains("desk-pet-creature--tickle") ||
@@ -1149,6 +1181,7 @@
 
     window.setTimeout(() => {
       feedingActive = false;
+      if (!playActive) setInteractionLocked(false);
     }, 1150);
   }
 
@@ -1156,7 +1189,7 @@
   function feed(opts) {
     opts = opts || {};
     const source = typeof opts.source === "string" ? opts.source : undefined;
-    if (playActive || feedingActive) return;
+    if (isSessionBusy()) return;
     applyTimeDecay();
     if (state.expired) return;
 
@@ -1183,12 +1216,14 @@
     const ctx = { source, fullnessAfter, delta };
 
     feedingActive = true;
+    setInteractionLocked(true);
     cancelIdleScheduler();
+    clearTickleAnimation();
     playFeedFoodFlight(() => finishFeedCelebration(ctx));
   }
 
   function tickle() {
-    if (playActive) return;
+    if (isSessionBusy()) return;
     applyExertionDrop(EXERTION_DROP_PER_TICKLE);
     if (state.expired) return;
 
@@ -1209,14 +1244,20 @@
     creature.setAttribute("aria-disabled", locked ? "true" : "false");
   }
 
-  function endBallPlay() {
+  function clearPlayAnimation() {
+    playBall.classList.remove("desk-pet-play-ball--animate");
+    playRope.classList.remove("desk-pet-play-rope--animate");
+    stageEl.classList.remove("desk-pet-stage--play-rope");
+    creature.classList.remove("desk-pet-creature--play", ...PLAY_SPEC_CLASSES);
+  }
+
+  function endPlay() {
     if (playEndTimer) {
       window.clearTimeout(playEndTimer);
       playEndTimer = 0;
     }
     playActive = false;
-    playBall.classList.remove("desk-pet-play-ball--animate");
-    creature.classList.remove("desk-pet-creature--ball-play");
+    clearPlayAnimation();
     setInteractionLocked(false);
     applyExertionDrop(EXERTION_DROP_PER_TICKLE);
     if (!state.expired) {
@@ -1227,22 +1268,33 @@
   }
 
   function play() {
-    if (playActive || state.expired) return;
+    if (isSessionBusy() || state.expired) return;
     applyTimeDecay();
     if (state.expired) return;
+
+    const choice = PLAY_SPECS[Math.floor(Math.random() * PLAY_SPECS.length)];
 
     playActive = true;
     setInteractionLocked(true);
     clearIdleAnimations();
     clearTickleAnimation();
-    playBall.classList.remove("desk-pet-play-ball--animate");
-    creature.classList.remove("desk-pet-creature--ball-play");
+    clearPlayAnimation();
     void playBall.offsetWidth;
+    void playRope.offsetWidth;
     void creature.offsetWidth;
-    creature.classList.add("desk-pet-creature--ball-play");
-    playBall.classList.add("desk-pet-play-ball--animate");
-    setStatus("Ball! Get it!", 2200);
-    playEndTimer = window.setTimeout(endBallPlay, PLAY_SESSION_MS);
+
+    creature.classList.add("desk-pet-creature--play", choice.spec);
+    if (choice.usesBall) {
+      playBall.classList.add("desk-pet-play-ball--animate");
+    }
+    if (choice.usesRope) {
+      stageEl.classList.add("desk-pet-stage--play-rope");
+      playRope.classList.add("desk-pet-play-rope--animate");
+    }
+
+    const line = choice.lines[Math.floor(Math.random() * choice.lines.length)];
+    setStatus(line, Math.min(choice.ms - 500, 2800));
+    playEndTimer = window.setTimeout(endPlay, choice.ms);
   }
 
   function revive() {
@@ -1272,7 +1324,7 @@
   btnPlay.addEventListener("click", play);
   creature.addEventListener("click", () => tickle());
   creature.addEventListener("keydown", (e) => {
-    if (playActive || state.expired) return;
+    if (isSessionBusy() || state.expired) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       tickle();

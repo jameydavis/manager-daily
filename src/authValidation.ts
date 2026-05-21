@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "./passwords.js";
 
+export const passwordFieldSchema = z
+  .string()
+  .min(PASSWORD_MIN_LEN, `Password must be at least ${PASSWORD_MIN_LEN} characters.`)
+  .max(PASSWORD_MAX_LEN, `At most ${PASSWORD_MAX_LEN} characters.`)
+  .regex(/[A-Za-z]/, "Include at least one letter.")
+  .regex(/\d/, "Include at least one number.");
+
 export const atlassianSiteSchema = z
   .string()
   .trim()
@@ -22,12 +29,7 @@ export const atlassianSiteSchema = z
 
 export const signupBodySchema = z.object({
   email: z.string().trim().email("Enter a valid email.").max(254),
-  password: z
-    .string()
-    .min(PASSWORD_MIN_LEN, `Password must be at least ${PASSWORD_MIN_LEN} characters.`)
-    .max(PASSWORD_MAX_LEN, `At most ${PASSWORD_MAX_LEN} characters.`)
-    .regex(/[A-Za-z]/, "Include at least one letter.")
-    .regex(/\d/, "Include at least one number."),
+  password: passwordFieldSchema,
   firstName: z.string().trim().min(1, "First name is required.").max(80),
   lastName: z.string().trim().min(1, "Last name is required.").max(80),
   atlassianSite: atlassianSiteSchema,
@@ -49,3 +51,18 @@ export const loginBodySchema = z.object({
   email: z.string().trim().email("Enter a valid email.").max(254),
   password: z.string().min(1, "Password is required."),
 });
+
+export const forgotPasswordBodySchema = z.object({
+  email: z.string().trim().email("Enter a valid email.").max(254),
+});
+
+export const changePasswordBodySchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required."),
+    newPassword: passwordFieldSchema,
+    confirmPassword: z.string().min(1, "Confirm your new password."),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "New passwords do not match.",
+    path: ["confirmPassword"],
+  });
