@@ -12,7 +12,7 @@ function resolveDataDir(): string {
 }
 
 const dataDir = resolveDataDir();
-const dbPath = path.join(dataDir, "manager-daily.db");
+const dbPath = path.join(dataDir, "daily-dashboard.db");
 
 fs.mkdirSync(dataDir, { recursive: true });
 

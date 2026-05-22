@@ -71,7 +71,7 @@ import { homeForDay, safeRedirectPath, withTaskRemovedFlash } from "./httpHelper
 export const EMAIL_FOLLOW_UP_TITLE = "Follow up from Email";
 
 /** Mirrored from `localStorage` in `public/user-settings.js` so the server can pre-order tasks. */
-export const TASKS_COMPLETED_BOTTOM_COOKIE = "managerDailyTasksCompletedBottom";
+export const TASKS_COMPLETED_BOTTOM_COOKIE = "dailyDashboardTasksCompletedBottom";
 
 export function sortTasksWithCompletedLast(rows: TaskRow[]): TaskRow[] {
   return [...rows].sort((a, b) => {
@@ -260,9 +260,10 @@ app.post("/auth/signup", async (req, res, next) => {
 
     const token = createSession(id, cookieSessionTtlSeconds());
     setSessionCookie(res, token);
-    const qs = new URLSearchParams({ signedUp: "1" });
-    if (envWriteFailed) qs.set("envWriteFailed", "1");
-    res.redirect(`/?${qs.toString()}`);
+    if (envWriteFailed) {
+      console.error("Signup: Jira credentials were not written to .env — add them manually.");
+    }
+    res.redirect("/");
   } catch (e) {
     next(e);
   }
@@ -424,8 +425,6 @@ app.get("/", async (req, res, next) => {
       return;
     }
 
-    const signUpEnvNote = req.query.signedUp === "1";
-    const signupEnvWriteFailed = req.query.envWriteFailed === "1";
 
     const year = d.getFullYear();
     const month = d.getMonth();
@@ -501,6 +500,9 @@ app.get("/", async (req, res, next) => {
       } catch (e) {
         directReportsError = e instanceof Error ? e.message : String(e);
       }
+    } else if (jiraEnv) {
+      directReportsError =
+        "Set JIRA_DIRECT_REPORTS in .env (comma- or newline-separated names; optional Name|accountId).";
     }
 
     const emailConfigured = importantEmailConfigured();
@@ -539,8 +541,6 @@ app.get("/", async (req, res, next) => {
       emailConfigured,
       emailMatches,
       emailMatchError,
-      signUpEnvNote,
-      signupEnvWriteFailed,
       emailFollowUpTitle: EMAIL_FOLLOW_UP_TITLE,
     });
   } catch (e) {

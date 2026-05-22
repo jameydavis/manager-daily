@@ -8,12 +8,12 @@ alwaysApply: true
 ## Single place for toggles
 
 - **User-facing on/off (or similar) preferences** belong in the **Settings** dialog in `views/partials/site-header.ejs`, wired through `public/user-settings.js`.
-- When adding a new preference, **add a control there** and persist it (typically **`localStorage`** with a **`managerDaily*`** key). Apply preferences early in JS (this file already syncs `document.documentElement` `dataset` attributes where CSS or other scripts depend on them).
+- When adding a new preference, **add a control there** and persist it (typically **`localStorage`** with a **`dailyDashboard*`** key). Apply preferences early in JS (this file already syncs `document.documentElement` `dataset` attributes where CSS or other scripts depend on them). **Color scheme** uses `dailyDashboardColorScheme` (`light` | `dark`) and `data-theme="light"` on `<html>`; keep `views/partials/theme-bootstrap.ejs` / `head-prefs.ejs` in sync for no-flash load.
 - **Do not remove** existing settings from that dialog when adding new ones unless the product explicitly deprecates them.
 
 ## Related surfaces
 
-- **Desk buddy** has its own dialog for name, corner, and palette (`views/index.ejs` + `public/desk-pet.js`). **Visibility on/off** stays in **User Settings** (`managerDailyDeskPetEnabled`) so it stays discoverable next to other app-wide prefs.
+- **Desk buddy** has its own dialog for name, corner, and palette (`views/index.ejs` + `public/desk-pet.js`). **Visibility on/off** stays in **User Settings** (`dailyDashboardDeskPetEnabled`) so it stays discoverable next to other app-wide prefs. Pet chrome follows app color scheme via `desk-pet-palettes-light.css` when `data-theme="light"` on `<html>`.
 - For **no flash** of wrong UI on the main day view, keep the small inline bootstrap in `views/index.ejs` in sync when a preference needs it before deferred scripts run.
 
 ## Checklist before finishing UI work

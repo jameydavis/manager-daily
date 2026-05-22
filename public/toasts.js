@@ -1,10 +1,10 @@
 /**
- * Lightweight toast stack for app-wide notifications. Extend via window.ManagerDailyToasts.show().
+ * Lightweight toast stack for app-wide notifications. Extend via window.DailyDashboardToasts.show().
  */
 (function () {
   const DEFAULT_MS = 4500;
 
-  /** Matches `user-settings.js` (`managerDailyDeskPetEnabled`); default visible when unset. */
+  /** Matches `user-settings.js` (`dailyDashboardDeskPetEnabled`); default visible when unset. */
   function isDeskPetVisible() {
     return document.documentElement.dataset.deskPet !== "off";
   }
@@ -121,7 +121,7 @@
     timer = window.setTimeout(remove, durationMs);
   }
 
-  window.ManagerDailyToasts = { show, syncAnchorFromDeskPet, isDeskPetVisible };
+  window.DailyDashboardToasts = { show, syncAnchorFromDeskPet, isDeskPetVisible };
 
   (function consumeTaskRemovedFromUrl() {
     try {

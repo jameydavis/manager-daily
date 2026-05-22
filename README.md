@@ -1,4 +1,4 @@
-# Manager Daily
+# Daily Dashboard
 
 Personal **engineering manager** day planner: **daily tasks**, **month calendar**, optional **sprint** shading on the calendar, **Jira** issue import, and a **My team** sidebar (direct reports via Jira user search). Includes **Desk Buddy**—a small in-page companion that **gamifies** day-to-day use with toasts and light pet-care mechanics.
 
@@ -9,7 +9,7 @@ Stack: **Node**, **Express**, **SQLite** (`better-sqlite3`), **EJS** templates, 
 ## Quick start
 
 ```bash
-cd manager-daily
+cd daily-dashboard
 cp .env.example .env
 # Edit .env (see below). At minimum, nothing is required to run locally—Jira is optional.
 npm install
@@ -18,7 +18,7 @@ npm run dev
 
 Open **http://127.0.0.1:3000** (or whatever **`PORT`** you set).
 
-- **First time:** use **Sign up** to create an account. Signup can also write Jira fields into `.env`; if so, **restart the server** so those variables load.
+- **First time:** use **Sign up** to create an account. Signup can optionally write Jira fields into `.env`.
 - **Sign in** from `/login` when returning. **Forgot password?** emails a temporary password (configure **`AUTH_SMTP_*`** in `.env`). After sign-in, change it under **Settings → Change password**.
 
 ### Production build
@@ -38,11 +38,11 @@ Copy **`.env.example`** to **`.env`** and adjust:
 |------|--------|
 | **`PORT`** | Server port (default `3000`). |
 | **`TZ`** | Process timezone for “today” and calendar logic (see `.env.example`). |
-| **`DATA_DIR`** | SQLite directory (default `./data`). Database file: `manager-daily.db`. |
+| **`DATA_DIR`** | SQLite directory (default `./data`). Database file: `daily-dashboard.db`. |
 | **Auth** | `SESSION_TTL_SECONDS`, `BCRYPT_ROUNDS`. Set **`NODE_ENV=production`** so session cookies use **`Secure`**. Forgot-password email: **`AUTH_SMTP_*`**, **`AUTH_MAIL_FROM`**, **`APP_BASE_URL`**. |
 | **Sprint shading** | `SPRINT_START` / `SPRINT_END` (YYYY-MM-DD), or rely on Jira board sprint below. |
 | **Jira** | `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`, `ATLASSIAN_SITE`, `JIRA_BOARD_ID`, optional `JIRA_JQL`, `JIRA_MAX_RESULTS`. |
-| **Direct reports** | `JIRA_DIRECT_REPORTS` (comma/newline list; optional `Name|accountId`). |
+| **My team** | `JIRA_DIRECT_REPORTS` (comma/newline list; optional `Name|accountId`). |
 | **Important email** (optional) | `EMAIL_IMAP_HOST`, `EMAIL_IMAP_USER`, `EMAIL_IMAP_PASS`, and **`EMAIL_KEYWORDS`** (comma/newline)—when all are set, the app can surface matching inbox snippets on the day view. |
 
 ## Using the app effectively
@@ -106,20 +106,20 @@ Tests live in **`src/**/*.test.ts`**. Coverage ignores the thin **`index.ts`** e
 
 - Month **calendar** with **today** highlight; optional **active sprint** range from **`JIRA_BOARD_ID`** ([Agile board sprint API](https://developer.atlassian.com/cloud/jira/software/rest/api-group-board/#api-agile-1-0-board-boardid-sprint-get)), e.g. `…/boards/1577` → `JIRA_BOARD_ID=1577`. If Jira isn’t configured or the API errors, **`SPRINT_START` / `SPRINT_END`** in `.env` can still shade the grid.
 - **Jira** issues: `POST /rest/api/3/search/jql` ([CHANGE-2046](https://developer.atlassian.com/changelog/#CHANGE-2046)).
-- **My team:** `GET /rest/api/3/user/search`; override people with **`JIRA_DIRECT_REPORTS`**.
+- **My team:** `GET /rest/api/3/user/search`; roster from **`JIRA_DIRECT_REPORTS`** in `.env`.
 
 ---
 
 ## Git hooks (`.env` backup on push)
 
-Before each **`git push`**, the **`pre-push`** hook copies into **`~/manager-env/`**:
+Before each **`git push`**, the **`pre-push`** hook copies into **`~/daily-dashboard-env/`**:
 
 | File | Backup name |
 |------|-------------|
-| `.env` | `manager-daily.env` |
-| SQLite DB | `manager-daily.db` |
+| `.env` | `daily-dashboard.env` |
+| SQLite DB | `daily-dashboard.db` |
 
-The DB path matches the app: **`DATA_DIR`** from `.env` if set, otherwise **`data/manager-daily.db`**.
+The DB path matches the app: **`DATA_DIR`** from `.env` if set, otherwise **`data/daily-dashboard.db`**.
 
 Enable hooks once per clone:
 
@@ -133,7 +133,7 @@ git config core.hooksPath githooks
 
 ```bash
 gh auth login
-gh repo create manager-daily --private --source=. --remote=origin --push
+gh repo create daily-dashboard --private --source=. --remote=origin --push
 ```
 
 Or add `origin` and `git push -u origin main`.

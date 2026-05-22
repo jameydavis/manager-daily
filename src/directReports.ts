@@ -30,28 +30,15 @@ function parseReportLine(line: string): { name: string; accountIdHint: string | 
   return { name, accountIdHint: id || null };
 }
 
-const DEFAULT_DIRECT_REPORT_LINES = [
-  "Austin Carpenter",
-  "Ryan Rose",
-  "Calista Helinski",
-  "Brooke Bowers",
-  "Dylan Baine",
-  "Shawn Hott",
-  "Jacob Mills",
-  "Ihor Bystrevskyi",
-  "Billy Larsen",
-];
-
+/** Team roster from `JIRA_DIRECT_REPORTS` in `.env` (comma/newline; optional `Name|accountId`). */
 export function parseDirectReportNamesFromEnv(): string[] {
   const raw = (process.env.JIRA_DIRECT_REPORTS ?? "").trim();
-  const fromEnv = raw
-    ? raw
-        .split(/\r?\n/)
-        .flatMap((line) => line.split(","))
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [];
-  return fromEnv.length ? fromEnv : [...DEFAULT_DIRECT_REPORT_LINES];
+  if (!raw) return [];
+  return raw
+    .split(/\r?\n/)
+    .flatMap((line) => line.split(","))
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function pickUser(

@@ -6,13 +6,11 @@ describe("parseDirectReportNamesFromEnv", () => {
     vi.resetModules();
   });
 
-  it("returns built-in defaults when env empty", async () => {
+  it("returns empty list when env unset", async () => {
     vi.stubEnv("JIRA_DIRECT_REPORTS", "");
     vi.resetModules();
     const { parseDirectReportNamesFromEnv } = await import("./directReports.js");
-    const names = parseDirectReportNamesFromEnv();
-    expect(names.length).toBeGreaterThan(3);
-    expect(names).toContain("Austin Carpenter");
+    expect(parseDirectReportNamesFromEnv()).toEqual([]);
   });
 
   it("splits comma and newline lists", async () => {

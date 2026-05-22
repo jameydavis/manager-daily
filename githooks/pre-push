@@ -1,10 +1,10 @@
 #!/bin/sh
-# Before push: copy local secrets + SQLite DB → ~/manager-env/
+# Before push: copy local secrets + SQLite DB → ~/daily-dashboard-env/
 ROOT="$(git rev-parse --show-toplevel)"
 ENV_SRC="$ROOT/.env"
-DEST_DIR="${HOME}/manager-env"
-DB_NAME="manager-daily.db"
-ENV_DEST="$DEST_DIR/manager-daily.env"
+DEST_DIR="${HOME}/daily-dashboard-env"
+DB_NAME="daily-dashboard.db"
+ENV_DEST="$DEST_DIR/daily-dashboard.env"
 DB_DEST="$DEST_DIR/$DB_NAME"
 
 mkdir -p "$DEST_DIR"

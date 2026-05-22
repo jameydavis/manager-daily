@@ -1,0 +1,18 @@
+<%- include('theme-bootstrap') %>
+<script>
+  try {
+    if (localStorage.getItem("dailyDashboardSprintShading") === "0") {
+      document.documentElement.dataset.sprintShading = "off";
+    }
+    if (localStorage.getItem("dailyDashboardDeskPetEnabled") === "0") {
+      document.documentElement.dataset.deskPet = "off";
+    }
+    if (localStorage.getItem("dailyDashboardTasksCompletedBottom") === "1") {
+      document.cookie =
+        "dailyDashboardTasksCompletedBottom=1; path=/; max-age=" + 86400 * 400 + "; SameSite=Lax";
+    }
+    <% if (typeof currentUser !== "undefined" && currentUser) { %>
+    document.documentElement.dataset.deskPetSync = "on";
+    <% } %>
+  } catch (e) { /* ignore */ }
+</script>

@@ -9,7 +9,7 @@ describe("buildApp HTTP", () => {
   let app: import("express").Express;
 
   beforeAll(async () => {
-    dataDir = mkdtempSync(join(tmpdir(), "manager-daily-app-"));
+    dataDir = mkdtempSync(join(tmpdir(), "daily-dashboard-app-"));
     vi.stubEnv("DATA_DIR", dataDir);
     vi.stubEnv("ATLASSIAN_SITE", "");
     vi.stubEnv("ATLASSIAN_EMAIL", "");
@@ -48,7 +48,7 @@ describe("buildApp HTTP", () => {
 
   it("GET / returns calendar HTML", async () => {
     const res = await request(app).get("/").query({ date: "2026-06-15" }).expect(200);
-    expect(res.text).toMatch(/Manager Daily|calendar|task/i);
+    expect(res.text).toMatch(/Daily Dashboard|calendar|task/i);
   });
 
   it("GET / with completed-bottom cookie orders open tasks before done in HTML", async () => {
@@ -64,7 +64,7 @@ describe("buildApp HTTP", () => {
     const res = await request(app)
       .get("/")
       .query({ date: day })
-      .set("Cookie", "managerDailyTasksCompletedBottom=1")
+      .set("Cookie", "dailyDashboardTasksCompletedBottom=1")
       .expect(200);
 
     const idxB = res.text.indexOf("Todo B");
@@ -207,7 +207,7 @@ describe("task routes and desk-buddy redirect flashes", () => {
   let app: import("express").Express;
 
   beforeAll(async () => {
-    dataDir = mkdtempSync(join(tmpdir(), "manager-daily-app-tasks-"));
+    dataDir = mkdtempSync(join(tmpdir(), "daily-dashboard-app-tasks-"));
     vi.stubEnv("DATA_DIR", dataDir);
     vi.stubEnv("ATLASSIAN_SITE", "");
     vi.resetModules();

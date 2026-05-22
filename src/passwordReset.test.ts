@@ -17,7 +17,7 @@ describe("passwordReset", () => {
   let verifyPassword: typeof import("./passwords.js").verifyPassword;
 
   beforeAll(async () => {
-    dataDir = mkdtempSync(join(tmpdir(), "manager-daily-pw-reset-"));
+    dataDir = mkdtempSync(join(tmpdir(), "daily-dashboard-pw-reset-"));
     vi.stubEnv("DATA_DIR", dataDir);
     vi.resetModules();
     db = await import("./db.js");

@@ -1,6 +1,6 @@
 <div class="header-row">
   <div class="header-brand">
-    <h1 class="header-title"><a class="link header-home" href="/">Manager Daily</a></h1>
+    <h1 class="header-title"><a class="link header-home" href="/">Daily Dashboard</a></h1>
     <% if (typeof monthLabel !== 'undefined' && monthLabel && typeof todayISO !== 'undefined' && todayISO) { %>
       <p class="sub">
         <%= monthLabel %> · <a class="link pill" href="/?date=<%= todayISO %>">Today: <%= todayISO %></a>
@@ -8,17 +8,31 @@
     <% } %>
   </div>
   <nav class="header-auth" aria-label="Account">
-    <button
-      type="button"
-      class="secondary ghost header-settings-btn"
-      id="user-settings-open"
-      aria-haspopup="dialog"
-      aria-controls="user-settings"
-    >
-      Settings
-    </button>
     <% if (currentUser) { %>
-      <span class="header-auth-name" title="<%= currentUser.email %>"><%= authUserDisplayLabel(currentUser) %></span>
+      <details class="header-user-menu">
+        <summary
+          class="header-user-menu-trigger"
+          aria-label="Account menu for <%= authUserDisplayLabel(currentUser) %>"
+        >
+          <span class="header-user-menu-name" title="<%= currentUser.email %>"><%= authUserDisplayLabel(currentUser) %></span>
+          <span class="header-user-menu-chevron" aria-hidden="true">▾</span>
+        </summary>
+        <div class="header-user-menu-panel">
+          <ul class="header-user-menu-list" role="menu">
+            <li role="none">
+              <button
+                type="button"
+                class="header-user-menu-item js-user-settings-open"
+                role="menuitem"
+                aria-haspopup="dialog"
+                aria-controls="user-settings"
+              >
+                Settings
+              </button>
+            </li>
+          </ul>
+        </div>
+      </details>
       <form method="post" action="/auth/logout" class="inline header-auth-out">
         <button type="submit" class="secondary ghost">Sign out</button>
       </form>
@@ -44,7 +58,15 @@
       </button>
     </div>
     <div class="user-settings-body">
-      <label class="user-settings-check">
+      <div class="user-settings-field">
+        <label class="user-settings-label" for="user-settings-color-scheme">Color scheme</label>
+        <select id="user-settings-color-scheme" class="user-settings-select" autocomplete="off">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+        <p class="user-settings-hint">Light uses a cool slate-and-blue palette. Your choice is saved in this browser.</p>
+      </div>
+      <label class="user-settings-check user-settings-check--after">
         <input type="checkbox" id="user-settings-sprint-shading" autocomplete="off" checked />
         <span>Sprint shading on calendar</span>
       </label>

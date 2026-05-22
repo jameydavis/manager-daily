@@ -2,9 +2,9 @@
  * Desk pet — time-based hunger, alerts, expiry + revive. Extend via window.DeskPet.
  */
 (function () {
-  const STORAGE_KEY = "managerDailyDeskPet";
+  const STORAGE_KEY = "dailyDashboardDeskPet";
   /** Last sync payload timestamp (ISO); used to merge with server when signed in. */
-  const SYNC_META_KEY = "managerDailyDeskPetSyncMeta";
+  const SYNC_META_KEY = "dailyDashboardDeskPetSyncMeta";
   const DESK_PET_API = "/api/desk-pet";
   /** Fullness drops by 10 every wall-clock 5 minutes (proportional between ticks). */
   const MS_DECAY_INTERVAL = 5 * 60 * 1000;
@@ -49,8 +49,8 @@
   const reviveCompactPct = document.getElementById("desk-pet-revive-compact-pct");
 
   function deskPetVisible() {
-    if (typeof window.ManagerDailyToasts?.isDeskPetVisible === "function") {
-      return window.ManagerDailyToasts.isDeskPetVisible();
+    if (typeof window.DailyDashboardToasts?.isDeskPetVisible === "function") {
+      return window.DailyDashboardToasts.isDeskPetVisible();
     }
     return document.documentElement.dataset.deskPet !== "off";
   }
@@ -78,7 +78,7 @@
     return;
   }
 
-  const PET_NAME_KEY = "managerDailyDeskPetDisplayName";
+  const PET_NAME_KEY = "dailyDashboardDeskPetDisplayName";
   const DEFAULT_PET_NAME = "Desk buddy";
   const MAX_PET_NAME_LEN = 12;
 
@@ -190,7 +190,7 @@
     creature.setAttribute("aria-label", `Tickle ${name}`);
   }
 
-  const UI_COLLAPSED_KEY = "managerDailyDeskPetUiCollapsed";
+  const UI_COLLAPSED_KEY = "dailyDashboardDeskPetUiCollapsed";
   let collapsed = false;
   try {
     collapsed = localStorage.getItem(UI_COLLAPSED_KEY) === "1";
@@ -200,10 +200,10 @@
 
   const collapseToggles = root.querySelectorAll(".desk-pet-collapse-toggle");
 
-  const CORNER_KEY = "managerDailyDeskPetCorner";
+  const CORNER_KEY = "dailyDashboardDeskPetCorner";
   const CORNER_IDS = /** @type {const} */ (["br", "bl", "tr", "tl"]);
 
-  const PALETTE_KEY = "managerDailyDeskPetPalette";
+  const PALETTE_KEY = "dailyDashboardDeskPetPalette";
   const PALETTE_IDS = /** @type {const} */ ([
     "lavender",
     "ocean",
@@ -267,8 +267,8 @@
       root.classList.remove(`desk-pet--corner-${id}`);
     }
     root.classList.add(`desk-pet--corner-${corner}`);
-    if (typeof window.ManagerDailyToasts?.syncAnchorFromDeskPet === "function") {
-      window.ManagerDailyToasts.syncAnchorFromDeskPet();
+    if (typeof window.DailyDashboardToasts?.syncAnchorFromDeskPet === "function") {
+      window.DailyDashboardToasts.syncAnchorFromDeskPet();
     }
   }
 
@@ -1160,19 +1160,19 @@
 
     if (
       deskPetVisible() &&
-      typeof window.ManagerDailyToasts !== "undefined" &&
-      typeof window.ManagerDailyToasts.show === "function"
+      typeof window.DailyDashboardToasts !== "undefined" &&
+      typeof window.DailyDashboardToasts.show === "function"
     ) {
       const petName = getPetDisplayName();
       if (fullnessAfter >= 100) {
         if (source === "manual" || source === "taskCreated" || source === "taskCompleted") {
-          window.ManagerDailyToasts.show({
+          window.DailyDashboardToasts.show({
             message: `${petName} is full, great job!`,
             variant: "pet",
           });
         }
       } else if (source === "manual" && delta > 0) {
-        window.ManagerDailyToasts.show({
+        window.DailyDashboardToasts.show({
           message: `You fed ${petName}. Contentment went up by ${delta}%.`,
           variant: "pet",
         });
@@ -1199,10 +1199,10 @@
       window.dispatchEvent(new CustomEvent("deskPet:feedRefused", { detail: { ...state } }));
       if (
         deskPetVisible() &&
-        typeof window.ManagerDailyToasts !== "undefined" &&
-        typeof window.ManagerDailyToasts.show === "function"
+        typeof window.DailyDashboardToasts !== "undefined" &&
+        typeof window.DailyDashboardToasts.show === "function"
       ) {
-        window.ManagerDailyToasts.show({
+        window.DailyDashboardToasts.show({
           message: `${getPetDisplayName()} is full, great job!`,
           variant: "pet",
         });
@@ -1448,7 +1448,7 @@
 
       function showGamifyToastsThenStrip(then) {
         const name = getPetDisplayName();
-        const show = window.ManagerDailyToasts?.show;
+        const show = window.DailyDashboardToasts?.show;
         if (typeof show !== "function") {
           then();
           return;
@@ -1490,7 +1490,7 @@
       let attempts = 0;
       const maxAttempts = 60;
       function tryConsume() {
-        if (typeof window.ManagerDailyToasts?.show === "function") {
+        if (typeof window.DailyDashboardToasts?.show === "function") {
           showGamifyToastsThenStrip(runFeedQueue);
           return;
         }

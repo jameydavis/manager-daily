@@ -40,7 +40,7 @@ export async function requestPasswordReset(email: string): Promise<PasswordReset
   if (!mail.ok) {
     if (authMailDevFallbackEnabled()) {
       console.info(
-        `[manager-daily] Password reset for ${row.email} (SMTP not configured). Temporary password: ${temporaryPassword}`
+        `[daily-dashboard] Password reset for ${row.email} (SMTP not configured). Temporary password: ${temporaryPassword}`
       );
     } else {
       return {

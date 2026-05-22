@@ -4,45 +4,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Manager Daily — <%= selected %>
+  <title>Daily Dashboard — <%= selected %>
   </title>
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/desk-pet-palettes.css" />
+  <link rel="stylesheet" href="/desk-pet-palettes-light.css" />
+  <%- include('partials/head-prefs') %>
 </head>
 
 <body>
-  <script>
-    try {
-      if (localStorage.getItem('managerDailySprintShading') === '0') {
-        document.documentElement.dataset.sprintShading = 'off';
-      }
-      if (localStorage.getItem('managerDailyDeskPetEnabled') === '0') {
-        document.documentElement.dataset.deskPet = 'off';
-      }
-      if (localStorage.getItem('managerDailyTasksCompletedBottom') === '1') {
-        document.cookie = 'managerDailyTasksCompletedBottom=1; path=/; max-age=' + (86400 * 400) + '; SameSite=Lax';
-      }
-      <% if (typeof currentUser !== 'undefined' && currentUser) { %>
-      document.documentElement.dataset.deskPetSync = 'on';
-      <% } %>
-    } catch (e) { /* ignore */ }
-  </script>
   <header class="header">
     <%- include('partials/site-header') %>
   </header>
-
-  <% if (typeof signUpEnvNote !== 'undefined' && signUpEnvNote) { %>
-    <div class="signup-env-banner" role="status">
-      <% if (typeof signupEnvWriteFailed !== 'undefined' && signupEnvWriteFailed) { %>
-        <p>Your account is ready, but <strong>we could not write <code>.env</code></strong>. Add
-          <code>ATLASSIAN_EMAIL</code>, <code>ATLASSIAN_API_TOKEN</code>, <code>ATLASSIAN_SITE</code>, and
-          <code>JIRA_BOARD_ID</code> manually, then restart the server.</p>
-      <% } else { %>
-        <p>Jira settings were saved to <code>.env</code>. <strong>Restart the app</strong> so the server loads the new
-          variables.</p>
-      <% } %>
-    </div>
-  <% } %>
 
   <main class="layout">
     <section class="panel calendar-panel">

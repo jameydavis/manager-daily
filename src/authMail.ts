@@ -42,7 +42,7 @@ export async function sendTemporaryPasswordEmail(opts: {
 
   const text = `${greeting}
 
-We received a request to reset your Manager Daily password.
+We received a request to reset your Daily Dashboard password.
 
 Your temporary password is: ${opts.temporaryPassword}
 
@@ -52,7 +52,7 @@ Then change your password when you are ready: ${changeUrl}
 If you did not request this, contact your administrator.`;
 
   const html = `<p>${greeting}</p>
-<p>We received a request to reset your <strong>Manager Daily</strong> password.</p>
+<p>We received a request to reset your <strong>Daily Dashboard</strong> password.</p>
 <p>Your temporary password is:</p>
 <p style="font-family:monospace;font-size:1.1em">${opts.temporaryPassword}</p>
 <p><a href="${loginUrl}">Sign in</a>, then <a href="${changeUrl}">change your password</a> when you are ready.</p>
@@ -68,7 +68,7 @@ If you did not request this, contact your administrator.`;
     await transport.sendMail({
       from,
       to: opts.to,
-      subject: "Manager Daily — temporary password",
+      subject: "Daily Dashboard — temporary password",
       text,
       html,
     });

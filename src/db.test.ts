@@ -8,7 +8,7 @@ describe("db", () => {
   let db: typeof import("./db.js");
 
   beforeAll(async () => {
-    dataDir = mkdtempSync(join(tmpdir(), "manager-daily-db-"));
+    dataDir = mkdtempSync(join(tmpdir(), "daily-dashboard-db-"));
     vi.stubEnv("DATA_DIR", dataDir);
     vi.resetModules();
     db = await import("./db.js");

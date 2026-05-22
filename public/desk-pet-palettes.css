@@ -1,6 +1,7 @@
 /**
  * Desk buddy color palettes — variables consumed by /style.css (desk pet section).
  * Load after style.css so tokens override cleanly per #desk-pet.desk-pet--palette-*.
+ * Light app theme overrides: desk-pet-palettes-light.css (html[data-theme="light"]).
  */
 #desk-pet {
   --pet-panel-border: rgba(232, 176, 255, 0.42);
@@ -80,6 +81,25 @@
   --pet-alert-cute-g1: rgba(255, 186, 230, 0.55);
   --pet-alert-cute-g2: rgba(255, 160, 210, 0.35);
   --pet-alert-cute-g3: rgba(255, 140, 200, 0.2);
+  --pet-title-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --pet-gear-shadow-inset: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  --pet-panel-shadow-inset: 0 0 0 1px rgba(255, 255, 255, 0.07) inset;
+  --pet-panel-shadow-drop: 0 10px 36px rgba(0, 0, 0, 0.48);
+  --pet-eye-c1: #fff;
+  --pet-eye-c2: #3a3550;
+  --pet-eye-c3: #2a2638;
+  --pet-eye-c4: #1a1825;
+  --pet-eye-shadow-outer: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --pet-eye-shadow-inset: inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+  --pet-settings-input-bg: rgba(12, 14, 22, 0.94);
+  --pet-status-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --pet-alert-panel-inset: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  --pet-alert-panel-drop: 0 10px 36px rgba(0, 0, 0, 0.48);
+  --pet-alert-urgent-br: rgba(255, 150, 150, 0.85);
+  --pet-alert-urgent-inset: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  --pet-alert-urgent-drop: 0 10px 36px rgba(0, 0, 0, 0.5);
+  --pet-alert-urgent-ring: 0 0 0 2px rgba(248, 113, 113, 0.55);
+  --pet-alert-urgent-glow: 0 0 40px rgba(248, 113, 113, 0.42), 0 0 56px rgba(255, 100, 120, 0.22);
 }
 
 #desk-pet.desk-pet--palette-ocean {
