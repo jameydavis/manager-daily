@@ -137,3 +137,33 @@ describe("formatDurationSeconds", () => {
     expect(formatDurationSeconds(45)).toBe("<1m");
   });
 });
+
+describe("calendarDaysSinceIso", () => {
+  it("counts inclusive local calendar days through today", async () => {
+    const { calendarDaysSinceIso } = await import("./jira.js");
+    const now = new Date(2026, 4, 19, 15, 0, 0);
+    expect(calendarDaysSinceIso("2026-05-19T08:00:00.000Z", now)).toBe(0);
+    expect(calendarDaysSinceIso("2026-05-17T23:59:59.000Z", now)).toBe(2);
+    expect(calendarDaysSinceIso("bad", now)).toBeNull();
+  });
+});
+
+describe("parseLastStatusChangeAt", () => {
+  it("returns the newest status transition timestamp", async () => {
+    const { parseLastStatusChangeAt } = await import("./jira.js");
+    expect(
+      parseLastStatusChangeAt([
+        {
+          created: "2026-05-10T10:00:00.000Z",
+          items: [{ field: "summary", fromString: "A", toString: "B" }],
+        },
+        {
+          created: "2026-05-12T10:00:00.000Z",
+          items: [{ field: "status", fromString: "To Do", toString: "In Progress" }],
+        },
+      ])
+    ).toBe("2026-05-12T10:00:00.000Z");
+    expect(parseLastStatusChangeAt([])).toBeNull();
+    expect(parseLastStatusChangeAt(undefined)).toBeNull();
+  });
+});

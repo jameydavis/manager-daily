@@ -116,6 +116,8 @@ export function formatJiraEstimateFriendly(raw: string): string {
 
 type IssueModalFieldsResponse = {
   fields?: {
+    created?: string;
+    updated?: string;
     description?: unknown;
     reporter?: { displayName?: string };
     timeoriginalestimate?: number | null;
@@ -125,6 +127,15 @@ type IssueModalFieldsResponse = {
   };
 };
 
+export type JiraIssueStaleness = {
+  createdAt: string;
+  updatedAt: string;
+  lastStatusChangeAt: string;
+  daysSinceCreated: number;
+  daysSinceUpdated: number;
+  daysSinceStatusChange: number;
+};
+
 export type JiraIssueModalDetails = {
   description: string;
   originalEstimate: string;
@@ -132,7 +143,85 @@ export type JiraIssueModalDetails = {
   timeLogged: string;
   timeLoggedSeconds: number | null;
   originalEstimateSeconds: number | null;
+  staleness: JiraIssueStaleness | null;
 };
+
+type ChangelogHistory = {
+  created?: string;
+  items?: Array<{ field?: string }>;
+};
+
+type ChangelogPage = {
+  startAt?: number;
+  maxResults?: number;
+  total?: number;
+  values?: ChangelogHistory[];
+};
+
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Calendar days from an ISO instant through today (local midnight boundaries). */
+export function calendarDaysSinceIso(iso: string, now: Date = new Date()): number | null {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const start = startOfLocalDay(parsed);
+  const end = startOfLocalDay(now);
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 86_400_000));
+}
+
+/** Most recent status transition timestamp from a Jira changelog page (newest last). */
+export function parseLastStatusChangeAt(histories: ChangelogHistory[] | undefined): string | null {
+  if (!histories?.length) return null;
+  for (let i = histories.length - 1; i >= 0; i--) {
+    const history = histories[i];
+    if (!history.items?.some((item) => item.field === "status")) continue;
+    const created = history.created?.trim();
+    if (created) return created;
+  }
+  return null;
+}
+
+function buildStaleness(
+  createdAt: string | null | undefined,
+  updatedAt: string | null | undefined,
+  lastStatusChangeAt: string | null | undefined,
+  now: Date = new Date()
+): JiraIssueStaleness | null {
+  const created = typeof createdAt === "string" ? createdAt.trim() : "";
+  const updated = typeof updatedAt === "string" ? updatedAt.trim() : "";
+  if (!created || !updated) return null;
+  const statusAt = (typeof lastStatusChangeAt === "string" && lastStatusChangeAt.trim()) || created;
+  const daysSinceCreated = calendarDaysSinceIso(created, now);
+  const daysSinceUpdated = calendarDaysSinceIso(updated, now);
+  const daysSinceStatusChange = calendarDaysSinceIso(statusAt, now);
+  if (daysSinceCreated == null || daysSinceUpdated == null || daysSinceStatusChange == null) return null;
+  return {
+    createdAt: created,
+    updatedAt: updated,
+    lastStatusChangeAt: statusAt,
+    daysSinceCreated,
+    daysSinceUpdated,
+    daysSinceStatusChange,
+  };
+}
+
+async function fetchLastStatusChangeAt(env: JiraEnv, key: string): Promise<string | null> {
+  const meta = (await jiraRequestJson(
+    env,
+    `/rest/api/3/issue/${encodeURIComponent(key)}/changelog?maxResults=0`
+  )) as ChangelogPage;
+  const total = meta.total ?? 0;
+  if (total <= 0) return null;
+  const pageSize = 100;
+  const startAt = Math.max(0, total - pageSize);
+  const page = (await jiraRequestJson(
+    env,
+    `/rest/api/3/issue/${encodeURIComponent(key)}/changelog?startAt=${startAt}&maxResults=${pageSize}`
+  )) as ChangelogPage;
+  return parseLastStatusChangeAt(page.values);
+}
 
 function parseTimeLoggedSeconds(fields: IssueModalFieldsResponse["fields"]): number | null {
   const agg = fields?.aggregatetimespent;
@@ -159,10 +248,12 @@ function parseReporter(fields: IssueModalFieldsResponse["fields"]): string {
   return name || "—";
 }
 
-/** Fetch description, reporter, and original estimate for the detail modal. */
+/** Fetch description, reporter, estimate, and staleness metrics for the detail modal. */
 export async function fetchIssueModalDetails(env: JiraEnv, key: string): Promise<JiraIssueModalDetails> {
   const normalized = key.trim().toUpperCase();
   const fieldList = [
+    "created",
+    "updated",
     "description",
     "reporter",
     "timeoriginalestimate",
@@ -170,10 +261,13 @@ export async function fetchIssueModalDetails(env: JiraEnv, key: string): Promise
     "timespent",
     "aggregatetimespent",
   ];
-  const data = (await jiraRequestJson(
-    env,
-    `/rest/api/3/issue/${encodeURIComponent(normalized)}?fields=${encodeURIComponent(fieldList.join(","))}`
-  )) as IssueModalFieldsResponse;
+  const [data, lastStatusChangeAt] = await Promise.all([
+    jiraRequestJson(
+      env,
+      `/rest/api/3/issue/${encodeURIComponent(normalized)}?fields=${encodeURIComponent(fieldList.join(","))}`
+    ) as Promise<IssueModalFieldsResponse>,
+    fetchLastStatusChangeAt(env, normalized),
+  ]);
   const fields = data.fields;
   const timeLoggedSeconds = parseTimeLoggedSeconds(fields);
   const originalEstimateSeconds = parseOriginalEstimateSeconds(fields);
@@ -184,6 +278,7 @@ export async function fetchIssueModalDetails(env: JiraEnv, key: string): Promise
     timeLogged: formatDurationSeconds(timeLoggedSeconds),
     timeLoggedSeconds,
     originalEstimateSeconds,
+    staleness: buildStaleness(fields?.created, fields?.updated, lastStatusChangeAt),
   };
 }
 

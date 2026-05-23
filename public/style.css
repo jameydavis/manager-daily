@@ -3052,7 +3052,7 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 
 .jira-issue-dashboard {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.85rem;
   min-height: 9.5rem;
   margin-bottom: 0.85rem;
@@ -3101,6 +3101,58 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
   line-height: 1.35;
   color: var(--muted);
   text-align: center;
+}
+
+.jira-staleness {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 6.5rem;
+}
+
+.jira-staleness-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.42rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+}
+
+.jira-staleness-row--fresh {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.jira-staleness-row--normal {
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.jira-staleness-row--stale {
+  border-color: color-mix(in srgb, var(--task-done) 45%, var(--border));
+}
+
+.jira-staleness-row--old {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+  background: color-mix(in srgb, var(--danger) 8%, var(--panel));
+}
+
+.jira-staleness-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.jira-staleness-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 
 .jira-ring {
@@ -3233,6 +3285,13 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 
 .jira-time-bar--over {
   background: var(--danger);
+}
+
+@media (max-width: 1100px) {
+  .jira-issue-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 0;
+  }
 }
 
 @media (max-width: 860px) {

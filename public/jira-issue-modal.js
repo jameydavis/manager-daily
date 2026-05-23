@@ -16,6 +16,7 @@
   const estimateEl = document.getElementById("jira-issue-modal-estimate");
   const sprintWidgetEl = document.getElementById("jira-issue-modal-sprint-widget");
   const timeWidgetEl = document.getElementById("jira-issue-modal-time-widget");
+  const stalenessWidgetEl = document.getElementById("jira-issue-modal-staleness-widget");
   const descriptionEl = document.getElementById("jira-issue-modal-description");
   const sprintContextEl = document.getElementById("dashboard-sprint-context");
 
@@ -34,6 +35,7 @@
     !estimateEl ||
     !sprintWidgetEl ||
     !timeWidgetEl ||
+    !stalenessWidgetEl ||
     !descriptionEl
   ) {
     return;
@@ -139,6 +141,59 @@
     sprintWidgetEl.innerHTML = `
       ${ringWidget(remainingPct, String(daysLeft), daysLabel, name, daysLeft <= 2 ? "danger" : "accent")}
       ${progressBar(progressPct, timelineLabel)}
+    `;
+  }
+
+  /** @param {number} days */
+  function formatDaysAgo(days) {
+    if (days === 0) return "Today";
+    if (days === 1) return "1 day";
+    return `${days} days`;
+  }
+
+  /** @param {number} days */
+  function stalenessTone(days) {
+    if (days <= 2) return "fresh";
+    if (days <= 7) return "normal";
+    if (days <= 14) return "stale";
+    return "old";
+  }
+
+  /**
+   * @param {{ daysSinceCreated?: number; daysSinceUpdated?: number; daysSinceStatusChange?: number } | null | undefined} staleness
+   * @param {"loading" | "error" | "ready"} [mode]
+   */
+  function renderStalenessWidget(staleness, mode = "ready") {
+    if (mode === "loading") {
+      stalenessWidgetEl.innerHTML = '<p class="jira-widget-empty">Loading age…</p>';
+      return;
+    }
+    if (mode === "error" || !staleness) {
+      stalenessWidgetEl.innerHTML = '<p class="jira-widget-empty">Age unavailable.</p>';
+      return;
+    }
+
+    const rows = [
+      { label: "Created", days: staleness.daysSinceCreated },
+      { label: "Updated", days: staleness.daysSinceUpdated },
+      { label: "Status", days: staleness.daysSinceStatusChange },
+    ];
+
+    stalenessWidgetEl.innerHTML = `
+      <div class="jira-staleness" aria-label="Issue age">
+        ${rows
+          .map((row) => {
+            const days = typeof row.days === "number" ? row.days : 0;
+            const tone = stalenessTone(days);
+            return `
+              <div class="jira-staleness-row jira-staleness-row--${tone}">
+                <span class="jira-staleness-label">${escapeHtml(row.label)}</span>
+                <span class="jira-staleness-value">${escapeHtml(formatDaysAgo(days))}</span>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
     `;
   }
 
@@ -251,6 +306,7 @@
     setEstimateDisplay("…");
     setTimeLoggedDisplay("…");
     renderTimeWidget("…", null, null, "…");
+    renderStalenessWidget(null, "loading");
     descriptionEl.textContent = "Loading description…";
     descriptionEl.classList.add("jira-issue-description--loading");
 
@@ -268,6 +324,7 @@
         setEstimateDisplay("—");
         setTimeLoggedDisplay("—");
         renderTimeWidget("—", null, null, "—");
+        renderStalenessWidget(null, "error");
         descriptionEl.textContent = msg;
         descriptionEl.classList.remove("jira-issue-description--loading");
         descriptionEl.classList.add("jira-issue-description--error");
@@ -286,6 +343,10 @@
       setEstimateDisplay(estimateLabel);
       setTimeLoggedDisplay(timeLoggedLabel);
       renderTimeWidget(timeLoggedLabel, loggedSec, estimateSec, estimateLabel);
+      renderStalenessWidget(
+        data.staleness && typeof data.staleness === "object" ? data.staleness : null,
+        "ready"
+      );
 
       const text = typeof data.description === "string" ? data.description.trim() : "";
       descriptionEl.textContent = text || "No description.";
@@ -296,6 +357,7 @@
       setEstimateDisplay("—");
       setTimeLoggedDisplay("—");
       renderTimeWidget("—", null, null, "—");
+      renderStalenessWidget(null, "error");
       descriptionEl.textContent = "Could not load issue details.";
       descriptionEl.classList.remove("jira-issue-description--loading");
       descriptionEl.classList.add("jira-issue-description--error");
@@ -326,6 +388,7 @@
 
     renderSprintWidget();
     renderTimeWidget(time || "—", null, null, "…");
+    renderStalenessWidget(null, "loading");
 
     descriptionEl.classList.remove("jira-issue-description--error");
     setReporterDisplay("…");
