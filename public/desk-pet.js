@@ -133,6 +133,7 @@
     "Patches",
     "Mittens",
     "Sprinkles",
+    "Sal-n-Pepa",
     "Tootsie",
     "Bonbon",
     "Marzipan",
