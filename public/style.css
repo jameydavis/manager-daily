@@ -1,41 +1,46 @@
 :root {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  /* Dark scheme: Material Theme palette (blue-grey surfaces, classic accent colors). */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: dark;
 
-  --bg: #0f1419;
-  --panel: #1a2332;
-  --text: #e7ecf3;
-  --muted: #8b98a9;
-  --accent: #6ea8fe;
-  --today: rgba(255, 200, 87, 0.25);
-  --danger: #f87171;
-  --border: #2a3545;
-  --task-done: #5dd4a8;
-  --task-done-dim: rgba(93, 212, 168, 0.22);
-  --task-done-br: rgba(93, 212, 168, 0.5);
-  --task-done-hover-fg: #6fe0bc;
-  --task-done-hover-br: rgba(111, 224, 188, 0.65);
-  --task-done-hover-bg: rgba(93, 212, 168, 0.28);
-  --toast-info-br: rgba(110, 168, 254, 0.35);
-  --toast-pet-br: rgba(180, 150, 255, 0.45);
-  --toast-created-br: rgba(110, 220, 180, 0.5);
-  --toast-completed-br: rgba(110, 168, 254, 0.45);
-  --toast-removed-br: rgba(248, 113, 113, 0.45);
-  --btn-on-accent: #0f1419;
-  --shadow-pop: 0 10px 32px rgba(0, 0, 0, 0.5);
-  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.45);
-  --shadow-card-inset: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  --backdrop: rgba(4, 6, 10, 0.72);
-  --surface-inset: rgba(0, 0, 0, 0.15);
-  --hover-surface: rgba(255, 255, 255, 0.06);
-  --hover-surface-strong: rgba(255, 255, 255, 0.1);
-  --input-select-bg: rgba(12, 14, 22, 0.94);
-  --report-hint: #fbbf24;
-  --report-status: #fb923c;
-  --report-time: #93c5fd;
-  --report-issue-border: rgba(42, 53, 69, 0.65);
-  --report-details-bg: rgba(0, 0, 0, 0.28);
-  --report-details-border: rgba(42, 53, 69, 0.95);
+  --bg: #263238;
+  --panel: #2e3c43;
+  --text: #eeffff;
+  --muted: #546e7a;
+  --accent: #82aaff;
+  --today: rgba(255, 203, 107, 0.22);
+  --danger: #ff5370;
+  --border: #37474f;
+  --task-done: #c3e88d;
+  --task-done-dim: rgba(195, 232, 141, 0.18);
+  --task-done-br: rgba(195, 232, 141, 0.45);
+  --task-done-hover-fg: #d9f2a8;
+  --task-done-hover-br: rgba(195, 232, 141, 0.62);
+  --task-done-hover-bg: rgba(195, 232, 141, 0.24);
+  --toast-info-br: rgba(130, 170, 255, 0.42);
+  --toast-pet-br: rgba(199, 146, 234, 0.45);
+  --toast-created-br: rgba(195, 232, 141, 0.48);
+  --toast-completed-br: rgba(130, 170, 255, 0.42);
+  --toast-removed-br: rgba(255, 83, 112, 0.45);
+  --btn-on-accent: #263238;
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.32);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-card-inset: 0 0 0 1px rgba(238, 255, 255, 0.04) inset;
+  --backdrop: rgba(19, 28, 32, 0.72);
+  --surface-inset: rgba(0, 0, 0, 0.14);
+  --hover-surface: rgba(238, 255, 255, 0.06);
+  --hover-surface-strong: rgba(238, 255, 255, 0.1);
+  --input-select-bg: #314549;
+  --report-hint: #ffcb6b;
+  --report-status: #f78c6c;
+  --report-time: #82aaff;
+  --report-issue-border: rgba(55, 71, 79, 0.85);
+  --report-details-bg: rgba(0, 0, 0, 0.22);
+  --report-details-border: #37474f;
+}
+
+:root .panel {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.24), 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 :root[data-theme="light"] .panel {
@@ -302,12 +307,12 @@ body {
 }
 
 .header-user-menu-trigger:hover {
-  border-color: rgba(110, 168, 254, 0.45);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   background: var(--hover-surface);
 }
 
 .header-user-menu[open] .header-user-menu-trigger {
-  border-color: rgba(110, 168, 254, 0.45);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   background: var(--hover-surface);
 }
 
@@ -612,8 +617,8 @@ html[data-desk-pet="off"] #desk-pet {
 
 .signup-wizard-ind__item--active {
   color: var(--text);
-  border-color: rgba(110, 168, 254, 0.45);
-  background: rgba(110, 168, 254, 0.08);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .signup-wizard-ind__sep {
