@@ -1,0 +1,39 @@
+---
+description: Commit after each completed code change unless the user opts out
+alwaysApply: true
+---
+
+# Auto-commit completed work
+
+The user wants **every completed code change committed to git** without waiting to be asked.
+
+## When to commit
+
+Commit when a task is **done** — for example:
+
+- A feature, fix, or refactor is implemented and verified (run tests when the project has them for that area).
+- A follow-up tweak completes a requested UI or behavior change.
+- The user says the result looks good, or the request was narrow and clearly finished in one pass.
+
+Use **one commit per completed task**, not one commit per file or per tool call.
+
+## When not to commit
+
+- The user explicitly says not to commit yet, or is still iterating on the same task.
+- The change is exploratory, incomplete, or broken.
+- Files likely contain secrets (`.env`, credentials) — warn instead of committing.
+- **Question-only or review-only** turns with no code changes.
+
+## How to commit
+
+Follow the repo git safety protocol:
+
+1. Run `git status`, `git diff`, and `git log -1` (or recent log) before committing.
+2. Stage only relevant files; never commit secrets.
+3. Write a concise message focused on **why** (1–2 sentences), via HEREDOC.
+4. Run `git status` after commit to confirm success.
+5. **Do not push** unless the user asks.
+
+## Persistence
+
+Before rebuilding or rewriting features, **check git and the working tree first** so uncommitted or prior work is not lost or reverted from memory.
