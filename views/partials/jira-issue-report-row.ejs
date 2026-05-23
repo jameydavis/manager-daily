@@ -1,0 +1,20 @@
+<li
+  class="report-issue jira-issue-trigger"
+  data-jira-issue="<%= encodeJiraIssueForModal({
+    key: issue.key,
+    summary: issue.summary,
+    status: issue.status,
+    issueType: issue.issueType,
+    browseUrl: issue.browseUrl,
+    timeLogged: issue.timeLoggedLabel,
+    assignee: assigneeName
+  }) %>"
+  role="button"
+  tabindex="0"
+  aria-label="<%= issue.key %>: <%= issue.summary %>"
+>
+  <span class="report-issue-key"><%= issue.key %></span>
+  <span class="report-issue-status"><%= issue.status %></span>
+  <span class="report-issue-time" title="Time logged (Jira)"><%= issue.timeLoggedLabel %></span>
+  <span class="report-issue-summary"><%= issue.summary %></span>
+</li>

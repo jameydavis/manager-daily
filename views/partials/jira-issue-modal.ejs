@@ -1,0 +1,48 @@
+<dialog id="jira-issue-modal" class="jira-issue-dialog" aria-labelledby="jira-issue-modal-title">
+  <div class="jira-issue-card">
+    <header class="jira-issue-head">
+      <div class="jira-issue-head-meta">
+        <span id="jira-issue-modal-key" class="jira-issue-key-badge"></span>
+        <span id="jira-issue-modal-type" class="jira-issue-type-badge"></span>
+        <span
+          id="jira-issue-modal-estimate"
+          class="jira-issue-estimate"
+          aria-label="Original estimate"
+          hidden
+        ></span>
+      </div>
+      <button type="button" class="jira-issue-close" id="jira-issue-modal-close" aria-label="Close issue details">
+        ×
+      </button>
+    </header>
+    <h2 id="jira-issue-modal-title" class="jira-issue-title">
+      <a id="jira-issue-modal-title-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+    </h2>
+    <div class="jira-issue-facts-row">
+      <dl class="jira-issue-facts">
+        <div class="jira-issue-fact">
+          <dt>Status</dt>
+          <dd id="jira-issue-modal-status"></dd>
+        </div>
+        <div class="jira-issue-fact jira-issue-fact--time" id="jira-issue-modal-time-row" hidden>
+          <dt>Time logged</dt>
+          <dd id="jira-issue-modal-time"></dd>
+        </div>
+        <div class="jira-issue-fact jira-issue-fact--assignee" id="jira-issue-modal-assignee-row" hidden>
+          <dt>Assignee</dt>
+          <dd id="jira-issue-modal-assignee"></dd>
+        </div>
+      </dl>
+      <div class="jira-issue-reporter-wrap" id="jira-issue-modal-reporter-row" hidden>
+        <div class="jira-issue-fact jira-issue-fact--reporter">
+          <dt>Reporter</dt>
+          <dd id="jira-issue-modal-reporter"></dd>
+        </div>
+      </div>
+    </div>
+    <section class="jira-issue-scroll" aria-labelledby="jira-issue-modal-description-label">
+      <h3 id="jira-issue-modal-description-label" class="jira-issue-description-label">Description</h3>
+      <div id="jira-issue-modal-description" class="jira-issue-description" aria-live="polite"></div>
+    </section>
+  </div>
+</dialog>

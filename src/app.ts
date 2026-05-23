@@ -42,7 +42,7 @@ import {
   type TaskRow,
 } from "./db.js";
 import { deskPetSyncStateSchema, parseDeskPetSyncState } from "./deskPetState.js";
-import { DEFAULT_JIRA_JQL, getJiraEnv, searchIssues } from "./jira.js";
+import { DEFAULT_JIRA_JQL, encodeJiraIssueForModal, fetchIssueModalDetails, getJiraEnv, isValidJiraIssueKey, searchIssues } from "./jira.js";
 import { mergeJiraCredentialsIntoDotenv } from "./dotenvMerge.js";
 import { verifyJiraSignupCredentials } from "./jiraSignupVerify.js";
 import {
@@ -86,6 +86,7 @@ export function buildApp(): express.Express {
 app.set("view engine", "ejs");
 app.set("views", path.join(process.cwd(), "views"));
 app.locals.authUserDisplayLabel = authUserDisplayLabel;
+app.locals.encodeJiraIssueForModal = encodeJiraIssueForModal;
 
 app.use(cookieParser());
 app.use(express.json({ limit: "16kb" }));
@@ -413,6 +414,28 @@ app.put("/api/desk-pet", (req, res) => {
   }
   upsertUserDeskPetState(user.id, JSON.stringify(body.data.state));
   res.json({ ok: true, updatedAt: body.data.state.updatedAt });
+});
+
+app.get("/api/jira/issues/:key", requireAuth, async (req, res) => {
+  const rawKey = typeof req.params.key === "string" ? req.params.key.trim() : "";
+  if (!isValidJiraIssueKey(rawKey)) {
+    res.status(400).json({ error: "Invalid issue key." });
+    return;
+  }
+  const env = getJiraEnv();
+  if (!env) {
+    res.status(503).json({ error: "Jira is not configured." });
+    return;
+  }
+  try {
+    const key = rawKey.toUpperCase();
+    const details = await fetchIssueModalDetails(env, key);
+    res.json({ key, ...details });
+  } catch (e) {
+    res.status(502).json({
+      error: e instanceof Error ? e.message : "Could not load issue details.",
+    });
+  }
 });
 
 app.get("/", async (req, res, next) => {

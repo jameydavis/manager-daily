@@ -1092,6 +1092,33 @@ button.danger:hover {
   gap: 0.35rem;
 }
 
+.jira-row-main {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.jira-issue-trigger {
+  cursor: pointer;
+  border-radius: 8px;
+  margin: -0.25rem -0.35rem;
+  padding: 0.25rem 0.35rem;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.jira-issue-trigger:hover,
+.jira-issue-trigger:focus-visible {
+  background: var(--hover-surface);
+  outline: none;
+}
+
+.jira-issue-trigger:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
 @media (min-width: 640px) {
   .jira-row {
     grid-template-columns: 1fr auto;
@@ -2930,4 +2957,196 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
   .desk-pet-panel {
     width: 10.5rem;
   }
+}
+
+/* --- Jira issue detail modal --- */
+.jira-issue-dialog {
+  box-sizing: border-box;
+  margin: auto;
+  padding: 0;
+  width: 80vw;
+  height: 80vh;
+  max-width: 80vw;
+  max-height: 80vh;
+  border: none;
+  background: transparent;
+  color: var(--text);
+}
+
+.jira-issue-dialog::backdrop {
+  background: var(--backdrop);
+  backdrop-filter: blur(5px);
+}
+
+.jira-issue-card {
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1rem 1.15rem 1.05rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow: var(--shadow-card-inset), var(--shadow-card);
+}
+
+.jira-issue-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.jira-issue-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.55rem;
+  min-width: 0;
+}
+
+.jira-issue-key-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.jira-issue-type-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+}
+
+.jira-issue-estimate {
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.jira-issue-close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  margin: -0.2rem -0.15rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--hover-surface);
+  color: var(--muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.jira-issue-close:hover {
+  color: var(--text);
+  background: var(--hover-surface-strong);
+}
+
+.jira-issue-title {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.jira-issue-title a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.jira-issue-title a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.jira-issue-facts-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem 1.5rem;
+  align-items: start;
+  flex-shrink: 0;
+}
+
+.jira-issue-facts {
+  margin: 0;
+  display: grid;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.jira-issue-reporter-wrap {
+  flex-shrink: 0;
+}
+
+.jira-issue-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.jira-issue-description-label {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.jira-issue-description {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.jira-issue-description--loading {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.jira-issue-description--error {
+  color: var(--danger);
+}
+
+.jira-issue-fact {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.65rem;
+  align-items: baseline;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.jira-issue-fact dt {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.jira-issue-fact dd {
+  margin: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }

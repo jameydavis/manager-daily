@@ -8,6 +8,7 @@ export type ReportAssigneeIssue = {
   key: string;
   summary: string;
   status: string;
+  issueType: string;
   timeLoggedLabel: string;
   browseUrl: string;
 };
@@ -24,6 +25,7 @@ type SearchJqlResponse = {
     fields?: {
       summary?: string;
       status?: { name?: string };
+      issuetype?: { name?: string };
       timespent?: number | null;
       aggregatetimespent?: number | null;
     };
@@ -50,6 +52,7 @@ function mapIssue(env: JiraEnv, i: NonNullable<SearchJqlResponse["issues"]>[numb
     key: i.key,
     summary: f.summary ?? "",
     status: f.status?.name ?? "",
+    issueType: f.issuetype?.name ?? "",
     timeLoggedLabel: formatLoggedTime(seconds),
     browseUrl: `${env.site}/browse/${i.key}`,
   };
@@ -70,7 +73,7 @@ export async function fetchAssigneeOpenIssues(
   const body = {
     jql,
     maxResults: max,
-    fields: ["summary", "status", "timespent", "aggregatetimespent"],
+    fields: ["summary", "status", "issuetype", "timespent", "aggregatetimespent"],
   };
   try {
     const data = (await jiraRequestJson(env, "/rest/api/3/search/jql", {

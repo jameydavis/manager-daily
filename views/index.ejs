@@ -176,12 +176,7 @@
                             <% if (hasIP) { %>
                               <ul class="report-issues" aria-label="In Progress">
                                 <% r.assigneeIssuesInProgress.forEach(function (issue) { %>
-                                  <li class="report-issue">
-                                    <a class="link report-issue-key" href="<%= issue.browseUrl %>" target="_blank" rel="noopener"><%= issue.key %></a>
-                                    <span class="report-issue-status"><%= issue.status %></span>
-                                    <span class="report-issue-time" title="Time logged (Jira)"><%= issue.timeLoggedLabel %></span>
-                                    <span class="report-issue-summary"><%= issue.summary %></span>
-                                  </li>
+                                  <%- include('partials/jira-issue-report-row', { issue: issue, assigneeName: r.displayName }) %>
                                 <% }); %>
                               </ul>
                             <% } %>
@@ -195,12 +190,7 @@
                                 <summary class="report-other-statuses-summary" aria-label="Other Statuses, <%= r.assigneeIssuesOther.length %> issues">Other Statuses</summary>
                                 <ul class="report-issues report-issues--other" aria-label="Other statuses">
                                   <% r.assigneeIssuesOther.forEach(function (issue) { %>
-                                    <li class="report-issue">
-                                      <a class="link report-issue-key" href="<%= issue.browseUrl %>" target="_blank" rel="noopener"><%= issue.key %></a>
-                                      <span class="report-issue-status"><%= issue.status %></span>
-                                      <span class="report-issue-time" title="Time logged (Jira)"><%= issue.timeLoggedLabel %></span>
-                                      <span class="report-issue-summary"><%= issue.summary %></span>
-                                    </li>
+                                    <%- include('partials/jira-issue-report-row', { issue: issue, assigneeName: r.displayName }) %>
                                   <% }); %>
                                 </ul>
                               </details>
@@ -238,19 +228,25 @@
               <ul class="jira-list">
                 <% jiraIssues.forEach(function (issue) { %>
                   <li class="jira-row">
-                    <div class="jira-meta">
-                      <a class="link jira-key" href="<%= issue.browseUrl %>" target="_blank" rel="noopener">
-                        <%= issue.key %>
-                      </a>
-                      <span class="jira-status">
-                        <%= issue.status %>
-                      </span>
-                      <span class="jira-type">
-                        <%= issue.issueType %>
-                      </span>
-                    </div>
-                    <div class="jira-summary">
-                      <%= issue.summary %>
+                    <div
+                      class="jira-row-main jira-issue-trigger"
+                      data-jira-issue="<%= encodeJiraIssueForModal({
+                        key: issue.key,
+                        summary: issue.summary,
+                        status: issue.status,
+                        issueType: issue.issueType,
+                        browseUrl: issue.browseUrl
+                      }) %>"
+                      role="button"
+                      tabindex="0"
+                      aria-label="<%= issue.key %>: <%= issue.summary %>"
+                    >
+                      <div class="jira-meta">
+                        <span class="jira-key"><%= issue.key %></span>
+                        <span class="jira-status"><%= issue.status %></span>
+                        <span class="jira-type"><%= issue.issueType %></span>
+                      </div>
+                      <div class="jira-summary"><%= issue.summary %></div>
                     </div>
                     <form method="post" action="/tasks/from-jira" class="jira-add">
                       <input type="hidden" name="day" value="<%= selected %>" />
@@ -399,7 +395,9 @@
       </div>
     </dialog>
   </aside>
+  <%- include('partials/jira-issue-modal') %>
   <script src="/toasts.js" defer></script>
+  <script src="/jira-issue-modal.js" defer></script>
   <script src="/desk-pet.js" defer></script>
 </body>
 
