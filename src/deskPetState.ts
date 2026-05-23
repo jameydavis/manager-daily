@@ -29,6 +29,8 @@ export const deskPetSyncStateSchema = z.object({
   corner: cornerSchema,
   palette: paletteSchema,
   uiCollapsed: z.boolean().optional(),
+  /** When name/corner/palette last changed; falls back to updatedAt when absent. */
+  appearanceUpdatedAt: z.string().min(1).max(64).optional(),
   updatedAt: z.string().min(1).max(64),
 });
 

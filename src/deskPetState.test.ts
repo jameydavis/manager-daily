@@ -25,6 +25,16 @@ describe("deskPetSyncStateSchema", () => {
     expect(parseDeskPetSyncState(valid)).toEqual(valid);
   });
 
+  it("accepts optional appearanceUpdatedAt for appearance-only sync", () => {
+    const withAppearance = {
+      ...valid,
+      appearanceUpdatedAt: "2026-05-16T12:05:00.000Z",
+      updatedAt: "2026-05-16T12:00:00.000Z",
+    };
+    expect(deskPetSyncStateSchema.safeParse(withAppearance).success).toBe(true);
+    expect(parseDeskPetSyncState(withAppearance)).toEqual(withAppearance);
+  });
+
   it("rejects invalid corner and fullness", () => {
     expect(parseDeskPetSyncState({ ...valid, corner: "xx" })).toBeNull();
     expect(parseDeskPetSyncState({ ...valid, game: { ...valid.game, fullness: 200 } })).toBeNull();

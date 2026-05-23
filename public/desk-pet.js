@@ -5,6 +5,8 @@
   const STORAGE_KEY = "dailyDashboardDeskPet";
   /** Last sync payload timestamp (ISO); used to merge with server when signed in. */
   const SYNC_META_KEY = "dailyDashboardDeskPetSyncMeta";
+  /** When name/corner/palette were last saved locally (ISO). */
+  const APPEARANCE_META_KEY = "dailyDashboardDeskPetAppearanceMeta";
   const DESK_PET_API = "/api/desk-pet";
   /** Fullness drops by 10 every wall-clock 5 minutes (proportional between ticks). */
   const MS_DECAY_INTERVAL = 5 * 60 * 1000;
@@ -157,7 +159,7 @@
     }
   }
 
-  function saveStoredPetName(raw) {
+  function writePetNameLocal(raw) {
     const t = typeof raw === "string" ? raw.trim().slice(0, MAX_PET_NAME_LEN) : "";
     try {
       if (!t) localStorage.removeItem(PET_NAME_KEY);
@@ -165,6 +167,11 @@
     } catch {
       /* ignore */
     }
+  }
+
+  function saveStoredPetName(raw) {
+    writePetNameLocal(raw);
+    writeAppearanceRevision(new Date().toISOString());
     scheduleSyncPush();
   }
 
@@ -282,12 +289,17 @@
   }
 
   /** @param {(typeof CORNER_IDS)[number]} corner */
-  function saveCornerPref(corner) {
+  function writeCornerLocal(corner) {
     try {
       localStorage.setItem(CORNER_KEY, corner);
     } catch {
       /* ignore */
     }
+  }
+
+  function saveCornerPref(corner) {
+    writeCornerLocal(corner);
+    writeAppearanceRevision(new Date().toISOString());
     scheduleSyncPush();
   }
 
@@ -316,12 +328,17 @@
   }
 
   /** @param {(typeof PALETTE_IDS)[number]} palette */
-  function savePalettePref(palette) {
+  function writePaletteLocal(palette) {
     try {
       localStorage.setItem(PALETTE_KEY, palette);
     } catch {
       /* ignore */
     }
+  }
+
+  function savePalettePref(palette) {
+    writePaletteLocal(palette);
+    writeAppearanceRevision(new Date().toISOString());
     scheduleSyncPush();
   }
 
@@ -330,10 +347,6 @@
   if (cornerSelect) {
     cornerSelect.value = loadCornerPref();
   }
-  if (paletteSelect) {
-    paletteSelect.value = loadPalettePref();
-  }
-
   if (paletteSelect) {
     paletteSelect.value = loadPalettePref();
   }
@@ -355,17 +368,24 @@
   }
 
   /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} appearance */
+  function applyAppearanceToUi(appearance) {
+    applyCornerPref(appearance.corner);
+    applyPalettePref(appearance.palette);
+    applyPetLabelsWithName(appearance.name);
+    if (cornerSelect) cornerSelect.value = appearance.corner;
+    if (paletteSelect) paletteSelect.value = appearance.palette;
+    if (nameInput) nameInput.value = appearance.name;
+  }
+
+  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} appearance */
   function persistAppearanceSettings(appearance) {
     const name = typeof appearance.name === "string" ? appearance.name.trim().slice(0, MAX_PET_NAME_LEN) : "";
-    try {
-      if (!name) localStorage.removeItem(PET_NAME_KEY);
-      else localStorage.setItem(PET_NAME_KEY, name);
-      localStorage.setItem(CORNER_KEY, appearance.corner);
-      localStorage.setItem(PALETTE_KEY, appearance.palette);
-    } catch {
-      /* ignore */
-    }
-    applyAppearancePreview({ ...appearance, name });
+    writePetNameLocal(name);
+    writeCornerLocal(appearance.corner);
+    writePaletteLocal(appearance.palette);
+    writeAppearanceRevision(new Date().toISOString());
+    applyAppearanceToUi({ ...appearance, name });
+    scheduleSyncPush();
   }
 
   function revertAppearanceToSaved() {
@@ -406,15 +426,15 @@
       revertAppearanceToSaved();
       if (settingsDialog.open) settingsDialog.close();
     });
-    settingsSaveBtn?.addEventListener("click", () => {
+    settingsSaveBtn?.addEventListener("click", async () => {
       if (nameInput && nameInput.value.length > MAX_PET_NAME_LEN) {
         nameInput.value = nameInput.value.slice(0, MAX_PET_NAME_LEN);
       }
       updateSettingsDraftFromForm();
       settingsEditing = false;
       persistAppearanceSettings(settingsDraft);
+      await flushAppearanceSettingsToServer();
       if (settingsDialog.open) settingsDialog.close();
-      void flushAppearanceSettingsToServer();
     });
     settingsDialog.addEventListener("click", (e) => {
       if (e.target !== settingsDialog) return;
@@ -594,6 +614,48 @@
     }
   }
 
+  function readAppearanceRevision() {
+    try {
+      const raw = localStorage.getItem(APPEARANCE_META_KEY);
+      if (!raw) return "";
+      const parsed = JSON.parse(raw);
+      return typeof parsed.updatedAt === "string" ? parsed.updatedAt : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function writeAppearanceRevision(updatedAt) {
+    if (!updatedAt) return;
+    try {
+      localStorage.setItem(APPEARANCE_META_KEY, JSON.stringify({ updatedAt }));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** @param {{ appearanceUpdatedAt?: string; updatedAt?: string }} payload */
+  function getAppearanceRevisionFromPayload(payload) {
+    if (typeof payload.appearanceUpdatedAt === "string" && payload.appearanceUpdatedAt) {
+      return payload.appearanceUpdatedAt;
+    }
+    if (typeof payload.updatedAt === "string" && payload.updatedAt) {
+      return payload.updatedAt;
+    }
+    return "";
+  }
+
+  function ensureAppearanceRevisionSeeded() {
+    if (readAppearanceRevision()) return;
+    const hasCustomAppearance =
+      !!loadStoredPetName() ||
+      loadCornerPref() !== "br" ||
+      loadPalettePref() !== "lavender";
+    if (hasCustomAppearance) {
+      writeAppearanceRevision(new Date().toISOString());
+    }
+  }
+
   function parseUpdatedAtMs(iso) {
     const t = Date.parse(iso);
     return Number.isFinite(t) ? t : 0;
@@ -602,6 +664,7 @@
   function buildSyncPayload() {
     const updatedAt = new Date().toISOString();
     writeSyncMetaUpdatedAt(updatedAt);
+    const appearanceUpdatedAt = readAppearanceRevision() || updatedAt;
     return {
       v: 1,
       game: {
@@ -617,6 +680,7 @@
       corner: loadCornerPref(),
       palette: loadPalettePref(),
       uiCollapsed: collapsed,
+      appearanceUpdatedAt,
       updatedAt,
     };
   }
@@ -638,7 +702,28 @@
     }
   }
 
-  function applySyncPayload(payload) {
+  /** @param {ReturnType<typeof buildSyncPayload>} payload */
+  function applyAppearanceFromSync(payload) {
+    const name =
+      typeof payload.displayName === "string"
+        ? payload.displayName.trim().slice(0, MAX_PET_NAME_LEN)
+        : loadStoredPetName();
+    const corner =
+      payload.corner === "br" || payload.corner === "bl" || payload.corner === "tr" || payload.corner === "tl"
+        ? payload.corner
+        : loadCornerPref();
+    const palette =
+      payload.palette && PALETTE_IDS.includes(payload.palette) ? payload.palette : loadPalettePref();
+    writePetNameLocal(name);
+    writeCornerLocal(corner);
+    writePaletteLocal(palette);
+    const appearanceRev = getAppearanceRevisionFromPayload(payload);
+    if (appearanceRev) writeAppearanceRevision(appearanceRev);
+    applyAppearanceToUi({ name, corner, palette });
+  }
+
+  /** @param {ReturnType<typeof buildSyncPayload>} payload */
+  function applyGameSyncPayload(payload) {
     if (!payload || payload.v !== 1 || !payload.game) return;
     applyGameFromSync(payload.game);
     try {
@@ -646,26 +731,18 @@
     } catch {
       /* ignore */
     }
-    if (typeof payload.displayName === "string") saveStoredPetName(payload.displayName);
-    if (payload.corner === "br" || payload.corner === "bl" || payload.corner === "tr" || payload.corner === "tl") {
-      saveCornerPref(payload.corner);
-      applyCornerPref(payload.corner);
-      if (cornerSelect) cornerSelect.value = payload.corner;
-    }
-    if (payload.palette && PALETTE_IDS.includes(payload.palette)) {
-      savePalettePref(payload.palette);
-      applyPalettePref(payload.palette);
-      if (paletteSelect) paletteSelect.value = payload.palette;
-    }
     if (typeof payload.uiCollapsed === "boolean") {
       collapsed = payload.uiCollapsed;
-      saveUiCollapsed();
+      try {
+        localStorage.setItem(UI_COLLAPSED_KEY, collapsed ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
       applyPanelLayout();
     }
     if (typeof payload.updatedAt === "string" && payload.updatedAt) {
       writeSyncMetaUpdatedAt(payload.updatedAt);
     }
-    applyPetLabels();
   }
 
   let applyingRemoteSync = false;
@@ -711,18 +788,33 @@
       const data = await res.json();
       const remote = data && data.state;
       const localAt = readSyncMetaUpdatedAt();
+      const localAppearanceAt = readAppearanceRevision();
       if (!remote) {
         scheduleSyncPush();
         return;
       }
       const remoteAt = typeof remote.updatedAt === "string" ? remote.updatedAt : "";
+      const remoteAppearanceAt = getAppearanceRevisionFromPayload(remote);
+      let shouldPush = false;
+
+      applyingRemoteSync = true;
       if (parseUpdatedAtMs(remoteAt) > parseUpdatedAtMs(localAt)) {
-        applyingRemoteSync = true;
-        applySyncPayload(remote);
-        applyingRemoteSync = false;
+        applyGameSyncPayload(remote);
       } else if (parseUpdatedAtMs(localAt) > parseUpdatedAtMs(remoteAt)) {
-        scheduleSyncPush();
+        shouldPush = true;
       }
+
+      if (!localAppearanceAt && remoteAppearanceAt) {
+        applyAppearanceFromSync(remote);
+      } else if (parseUpdatedAtMs(remoteAppearanceAt) > parseUpdatedAtMs(localAppearanceAt)) {
+        applyAppearanceFromSync(remote);
+      } else if (parseUpdatedAtMs(localAppearanceAt) > parseUpdatedAtMs(remoteAppearanceAt)) {
+        applyAppearanceToUi(readSavedAppearanceSettings());
+        shouldPush = true;
+      }
+      applyingRemoteSync = false;
+
+      if (shouldPush) scheduleSyncPush();
     } catch {
       /* ignore */
     }
@@ -1444,6 +1536,7 @@
 
   async function bootDeskPet() {
     load();
+    ensureAppearanceRevisionSeeded();
     await mergeDeskPetFromServer();
     const taskRemovedBump = takeDeskPetRemoveFromUrl();
     const carryOverCount = takeDeskPetCarryOverFromUrl();
