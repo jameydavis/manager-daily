@@ -136,8 +136,8 @@
   /** @param {number} days */
   function formatDaysAgo(days) {
     if (days === 0) return "Today";
-    if (days === 1) return "1 day";
-    return `${days} days`;
+    if (days === 1) return "1 day ago";
+    return `${days} days ago`;
   }
 
   /** @param {number} days */
