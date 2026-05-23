@@ -268,15 +268,11 @@
     );
 
     if (mode === "loading") {
-      const labelEl = document.getElementById("jira-issue-modal-description-label");
-      if (labelEl) labelEl.hidden = false;
       descriptionEl.textContent = "Loading description…";
       descriptionEl.classList.add("jira-issue-description--loading");
       return;
     }
     if (mode === "error") {
-      const labelEl = document.getElementById("jira-issue-modal-description-label");
-      if (labelEl) labelEl.hidden = false;
       descriptionEl.textContent = fallbackText || "Could not load issue details.";
       descriptionEl.classList.add("jira-issue-description--error");
       return;
@@ -286,8 +282,6 @@
     const hasSubheads = list.some((s) => typeof s.heading === "string" && s.heading.trim());
 
     if (!hasSubheads) {
-      const labelEl = document.getElementById("jira-issue-modal-description-label");
-      if (labelEl) labelEl.hidden = false;
       const text =
         (list.length === 1 && typeof list[0]?.body === "string" ? list[0].body.trim() : "") ||
         (typeof fallbackText === "string" ? fallbackText.trim() : "");
