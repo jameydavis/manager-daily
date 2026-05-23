@@ -129,10 +129,12 @@
       typeof sprintContext.progressPct === "number" ? sprintContext.progressPct : 0;
     const remainingPct =
       totalDays && totalDays > 0 ? Math.round((daysLeft / totalDays) * 100) : 0;
-    const daysLabel = daysLeft === 1 ? "day left" : "days left";
+    const daysLabel = daysLeft === 1 ? "weekday left" : "weekdays left";
     const name = typeof sprintContext.name === "string" ? sprintContext.name : "Current sprint";
     const timelineLabel =
-      totalDays != null ? `${progressPct}% through sprint · ${totalDays} days total` : `${progressPct}% through sprint`;
+      totalDays != null
+        ? `${progressPct}% through sprint · ${totalDays} weekdays total`
+        : `${progressPct}% through sprint`;
 
     sprintWidgetEl.innerHTML = `
       ${ringWidget(remainingPct, String(daysLeft), daysLabel, name, daysLeft <= 2 ? "danger" : "accent")}

@@ -54,22 +54,26 @@ describe("today", () => {
 });
 
 describe("sprintDaysLeftPhrase", () => {
-  it("counts inclusive calendar days through sprint end", () => {
-    expect(sprintDaysLeftPhrase("2026-04-26", "2026-04-28")).toBe("3 days left");
-    expect(sprintDaysLeftPhrase("2026-04-28", "2026-04-28")).toBe("1 day left");
+  it("counts inclusive weekdays through sprint end", () => {
+    expect(sprintDaysLeftPhrase("2026-04-27", "2026-04-28")).toBe("2 weekdays left");
+    expect(sprintDaysLeftPhrase("2026-04-28", "2026-04-28")).toBe("1 weekday left");
   });
 
-  it("returns 0 days left when today is after end", () => {
-    expect(sprintDaysLeftPhrase("2026-05-01", "2026-04-28")).toBe("0 days left");
+  it("returns 0 weekdays left when today is after end", () => {
+    expect(sprintDaysLeftPhrase("2026-05-01", "2026-04-28")).toBe("0 weekdays left");
+  });
+
+  it("skips weekend days in the remaining count", () => {
+    expect(sprintDaysLeftInclusive("2026-04-24", "2026-04-28")).toBe(3);
   });
 });
 
 describe("sprint dashboard metrics", () => {
-  it("computes inclusive sprint length and progress", () => {
-    expect(sprintInclusiveDaysBetween("2026-04-01", "2026-04-10")).toBe(10);
-    expect(sprintDaysLeftInclusive("2026-04-05", "2026-04-10")).toBe(6);
-    expect(sprintElapsedInclusive("2026-04-05", "2026-04-01", "2026-04-10")).toBe(5);
-    expect(sprintProgressPercent("2026-04-05", "2026-04-01", "2026-04-10")).toBe(50);
+  it("computes inclusive sprint length and progress using weekdays only", () => {
+    expect(sprintInclusiveDaysBetween("2026-04-01", "2026-04-10")).toBe(8);
+    expect(sprintDaysLeftInclusive("2026-04-05", "2026-04-10")).toBe(5);
+    expect(sprintElapsedInclusive("2026-04-05", "2026-04-01", "2026-04-10")).toBe(3);
+    expect(sprintProgressPercent("2026-04-05", "2026-04-01", "2026-04-10")).toBe(38);
   });
 });
 

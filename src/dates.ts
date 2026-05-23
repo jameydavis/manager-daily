@@ -18,45 +18,66 @@ export function today(): string {
   return formatDay(new Date());
 }
 
-/** Inclusive calendar days from today through sprint end; 0 if today is after end. */
+function isWeekday(d: Date): boolean {
+  const dow = d.getDay();
+  return dow >= 1 && dow <= 5;
+}
+
+/** Inclusive weekday count between two ISO dates (Mon–Fri only). */
+export function countWeekdaysInclusive(fromISO: string, toISO: string): number {
+  const from = parseDay(fromISO);
+  const to = parseDay(toISO);
+  if (!from || !to) return 0;
+  let start = from;
+  let end = to;
+  if (start.getTime() > end.getTime()) {
+    start = to;
+    end = from;
+  }
+  let count = 0;
+  const cursor = new Date(start);
+  while (cursor.getTime() <= end.getTime()) {
+    if (isWeekday(cursor)) count += 1;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return count;
+}
+
+/** Inclusive weekdays from today through sprint end; 0 if today is after end. */
 export function sprintDaysLeftInclusive(todayISO: string, sprintEndISO: string): number {
   const t = parseDay(todayISO);
   const e = parseDay(sprintEndISO);
   if (!t || !e) return 0;
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const diff = Math.round((e.getTime() - t.getTime()) / msPerDay);
-  return Math.max(0, diff + 1);
+  if (t.getTime() > e.getTime()) return 0;
+  return countWeekdaysInclusive(todayISO, sprintEndISO);
 }
 
 export function sprintDaysLeftPhrase(todayISO: string, sprintEndISO: string): string {
   const days = sprintDaysLeftInclusive(todayISO, sprintEndISO);
-  if (days === 1) return "1 day left";
-  return `${days} days left`;
+  if (days === 1) return "1 weekday left";
+  return `${days} weekdays left`;
 }
 
-/** Inclusive day count for a sprint window (minimum 1). */
+/** Inclusive weekday count for a sprint window. */
 export function sprintInclusiveDaysBetween(startISO: string, endISO: string): number | null {
   const s = parseDay(startISO);
   const e = parseDay(endISO);
   if (!s || !e) return null;
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const diff = Math.round((e.getTime() - s.getTime()) / msPerDay);
-  return Math.max(1, diff + 1);
+  const count = countWeekdaysInclusive(startISO, endISO);
+  return count > 0 ? count : null;
 }
 
-/** Inclusive elapsed days from sprint start through today, clamped to the sprint window. */
+/** Inclusive elapsed weekdays from sprint start through today, clamped to the sprint window. */
 export function sprintElapsedInclusive(todayISO: string, startISO: string, endISO: string): number {
   const t = parseDay(todayISO);
   const s = parseDay(startISO);
   const e = parseDay(endISO);
   if (!t || !s || !e) return 0;
-  const msPerDay = 24 * 60 * 60 * 1000;
   if (t.getTime() < s.getTime()) return 0;
   if (t.getTime() > e.getTime()) {
-    return sprintInclusiveDaysBetween(startISO, endISO) ?? 0;
+    return countWeekdaysInclusive(startISO, endISO);
   }
-  const diff = Math.round((t.getTime() - s.getTime()) / msPerDay);
-  return diff + 1;
+  return countWeekdaysInclusive(startISO, todayISO);
 }
 
 /** Sprint timeline progress as 0–100 for dashboard charts. */
