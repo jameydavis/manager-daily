@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "public/client",
+    "rootDir": "src/client",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "noEmit": false
+  },
+  "include": ["src/client/**/*.ts"]
+}

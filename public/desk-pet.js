@@ -1,6 +1,12 @@
 /**
  * Desk pet — time-based hunger, alerts, expiry + revive. Extend via window.DeskPet.
  */
+import {
+  getAppearanceRevisionFromPayload,
+  parseUpdatedAtMs,
+  planDeskPetSyncMerge,
+} from "./client/deskPetSyncMerge.js";
+
 (function () {
   const STORAGE_KEY = "dailyDashboardDeskPet";
   /** Last sync payload timestamp (ISO); used to merge with server when signed in. */
@@ -634,17 +640,6 @@
     }
   }
 
-  /** @param {{ appearanceUpdatedAt?: string; updatedAt?: string }} payload */
-  function getAppearanceRevisionFromPayload(payload) {
-    if (typeof payload.appearanceUpdatedAt === "string" && payload.appearanceUpdatedAt) {
-      return payload.appearanceUpdatedAt;
-    }
-    if (typeof payload.updatedAt === "string" && payload.updatedAt) {
-      return payload.updatedAt;
-    }
-    return "";
-  }
-
   function ensureAppearanceRevisionSeeded() {
     if (readAppearanceRevision()) return;
     const hasCustomAppearance =
@@ -654,11 +649,6 @@
     if (hasCustomAppearance) {
       writeAppearanceRevision(new Date().toISOString());
     }
-  }
-
-  function parseUpdatedAtMs(iso) {
-    const t = Date.parse(iso);
-    return Number.isFinite(t) ? t : 0;
   }
 
   function buildSyncPayload() {
@@ -795,26 +785,25 @@
       }
       const remoteAt = typeof remote.updatedAt === "string" ? remote.updatedAt : "";
       const remoteAppearanceAt = getAppearanceRevisionFromPayload(remote);
-      let shouldPush = false;
+      const mergePlan = planDeskPetSyncMerge({
+        localUpdatedAt: localAt,
+        remoteUpdatedAt: remoteAt,
+        localAppearanceUpdatedAt: localAppearanceAt,
+        remoteAppearanceUpdatedAt: remoteAppearanceAt,
+      });
 
       applyingRemoteSync = true;
-      if (parseUpdatedAtMs(remoteAt) > parseUpdatedAtMs(localAt)) {
+      if (mergePlan.applyRemoteGame) {
         applyGameSyncPayload(remote);
-      } else if (parseUpdatedAtMs(localAt) > parseUpdatedAtMs(remoteAt)) {
-        shouldPush = true;
       }
-
-      if (!localAppearanceAt && remoteAppearanceAt) {
+      if (mergePlan.applyRemoteAppearance) {
         applyAppearanceFromSync(remote);
-      } else if (parseUpdatedAtMs(remoteAppearanceAt) > parseUpdatedAtMs(localAppearanceAt)) {
-        applyAppearanceFromSync(remote);
-      } else if (parseUpdatedAtMs(localAppearanceAt) > parseUpdatedAtMs(remoteAppearanceAt)) {
+      } else if (mergePlan.shouldPushLocal && localAppearanceAt) {
         applyAppearanceToUi(readSavedAppearanceSettings());
-        shouldPush = true;
       }
       applyingRemoteSync = false;
 
-      if (shouldPush) scheduleSyncPush();
+      if (mergePlan.shouldPushLocal) scheduleSyncPush();
     } catch {
       /* ignore */
     }

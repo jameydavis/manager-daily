@@ -1,6 +1,9 @@
 /**
  * Jira issue detail modal — opens from `.jira-issue-trigger` rows on the dashboard.
  */
+import { resolveJiraStatusTone } from "./client/jiraIssueStatus.js";
+import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
+
 (function () {
   const dialog = document.getElementById("jira-issue-modal");
   const closeBtn = document.getElementById("jira-issue-modal-close");
@@ -133,21 +136,6 @@
     `;
   }
 
-  /** @param {number} days */
-  function formatDaysAgo(days) {
-    if (days === 0) return "Today";
-    if (days === 1) return "1 day ago";
-    return `${days} days ago`;
-  }
-
-  /** @param {number} days */
-  function stalenessTone(days) {
-    if (days <= 2) return "fresh";
-    if (days <= 7) return "normal";
-    if (days <= 14) return "stale";
-    return "old";
-  }
-
   /**
    * @param {{ daysSinceCreated?: number; daysSinceUpdated?: number; daysSinceStatusChange?: number } | null | undefined} staleness
    * @param {"loading" | "error" | "ready"} [mode]
@@ -218,30 +206,6 @@
       ${ringWidget(pct, `${done}/${total}`, ringLabel, undefined, tone)}
       ${progressBar(pct, barLabel)}
     `;
-  }
-
-  /** @param {string | null | undefined} status */
-  function resolveJiraStatusTone(status) {
-    const s = typeof status === "string" ? status.trim().toLowerCase() : "";
-    if (!s || s === "—") return "neutral";
-    if (/\b(blocked|blocking|on hold|hold|waiting|impediment)\b/.test(s)) return "blocked";
-    if (
-      /\b(done|closed|resolved|complete|completed|released|deployed|finished|cancelled|canceled|won't fix|wont fix|duplicate)\b/.test(
-        s
-      )
-    ) {
-      return "done";
-    }
-    if (/\b(review|qa|test(?:ing)?|verify|verification|approval|uat|sign[- ]?off)\b/.test(s)) return "review";
-    if (
-      /\b(in progress|progress|develop(?:ment|ing)?|doing|active|implement(?:ing|ation)?|build(?:ing)?|coding|working|in dev)\b/.test(
-        s
-      )
-    ) {
-      return "progress";
-    }
-    if (/\b(to do|todo|to-do|backlog|open|new|ready|selected|planned|pending|next)\b/.test(s)) return "todo";
-    return "default";
   }
 
   /** @param {string | null | undefined} status */
