@@ -228,26 +228,23 @@
               <ul class="jira-list">
                 <% jiraIssues.forEach(function (issue) { %>
                   <li class="jira-row">
-                    <div
-                      class="jira-row-main jira-issue-trigger"
-                      data-jira-issue="<%= encodeJiraIssueForModal({
-                        key: issue.key,
-                        summary: issue.summary,
-                        status: issue.status,
-                        issueType: issue.issueType,
-                        browseUrl: issue.browseUrl
-                      }) %>"
-                      role="button"
-                      tabindex="0"
-                      aria-label="<%= issue.key %>: <%= issue.summary %>"
-                    >
-                      <div class="jira-meta">
-                        <span class="jira-key"><%= issue.key %></span>
-                        <span class="jira-status"><%= issue.status %></span>
-                        <span class="jira-type"><%= issue.issueType %></span>
-                      </div>
-                      <div class="jira-summary"><%= issue.summary %></div>
+                    <div class="jira-meta">
+                      <a
+                        class="link jira-key jira-issue-trigger"
+                        href="#"
+                        data-jira-issue="<%= encodeJiraIssueForModal({
+                          key: issue.key,
+                          summary: issue.summary,
+                          status: issue.status,
+                          issueType: issue.issueType,
+                          browseUrl: issue.browseUrl
+                        }) %>"
+                        aria-label="View <%= issue.key %>: <%= issue.summary %>"
+                      ><%= issue.key %></a>
+                      <span class="jira-status"><%= issue.status %></span>
+                      <span class="jira-type"><%= issue.issueType %></span>
                     </div>
+                    <div class="jira-summary"><%= issue.summary %></div>
                     <form method="post" action="/tasks/from-jira" class="jira-add">
                       <input type="hidden" name="day" value="<%= selected %>" />
                       <input type="hidden" name="key" value="<%= issue.key %>" />

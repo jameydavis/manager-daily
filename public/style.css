@@ -1092,33 +1092,6 @@ button.danger:hover {
   gap: 0.35rem;
 }
 
-.jira-row-main {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.jira-issue-trigger {
-  cursor: pointer;
-  border-radius: 8px;
-  margin: -0.25rem -0.35rem;
-  padding: 0.25rem 0.35rem;
-  text-align: left;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-}
-
-.jira-issue-trigger:hover,
-.jira-issue-trigger:focus-visible {
-  background: var(--hover-surface);
-  outline: none;
-}
-
-.jira-issue-trigger:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
-}
-
 @media (min-width: 640px) {
   .jira-row {
     grid-template-columns: 1fr auto;
