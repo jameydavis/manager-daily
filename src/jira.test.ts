@@ -184,10 +184,13 @@ describe("countSubtaskProgress", () => {
 
 describe("parseIssueDescriptionSections", () => {
   it("recognizes template subheadings with optional colons", async () => {
-    const { isIssueDescriptionSubheading, parseIssueDescriptionSections } = await import("./jira.js");
+    const { isIssueDescriptionSubheading, matchIssueDescriptionSubheading, parseIssueDescriptionSections } =
+      await import("./jira.js");
     expect(isIssueDescriptionSubheading("What")).toBe(true);
     expect(isIssueDescriptionSubheading("Why:")).toBe(true);
     expect(isIssueDescriptionSubheading("What we need")).toBe(false);
+    expect(matchIssueDescriptionSubheading("to do:")).toBe("To Do");
+    expect(matchIssueDescriptionSubheading("TECHNICAL DETAILS")).toBe("Technical Details");
 
     const sections = parseIssueDescriptionSections(
       "What\nBuild the modal flair.\n\nWhy\nManagers need scan-friendly stories.\n\nHow\nCSS watermark headings."
@@ -196,6 +199,18 @@ describe("parseIssueDescriptionSections", () => {
       { heading: "What", body: "Build the modal flair." },
       { heading: "Why", body: "Managers need scan-friendly stories." },
       { heading: "How", body: "CSS watermark headings." },
+    ]);
+  });
+
+  it("parses To Do and Technical Details sections with styled headings", async () => {
+    const { parseIssueDescriptionSections } = await import("./jira.js");
+    expect(
+      parseIssueDescriptionSections(
+        "To Do\nShip the widget.\n\nTechnical Details\nUse Jira parent search for subtasks."
+      )
+    ).toEqual([
+      { heading: "To Do", body: "Ship the widget." },
+      { heading: "Technical Details", body: "Use Jira parent search for subtasks." },
     ]);
   });
 

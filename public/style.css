@@ -34,6 +34,13 @@
   --report-hint: #ffcb6b;
   --report-status: #f78c6c;
   --report-time: #82aaff;
+  --jira-status-todo: #c792ea;
+  --jira-status-progress: #ffcb6b;
+  --jira-status-review: #89ddff;
+  --jira-status-done: var(--task-done);
+  --jira-status-blocked: var(--danger);
+  --jira-status-neutral: var(--muted);
+  --jira-status-default: var(--report-status);
   --report-issue-border: rgba(55, 71, 79, 0.85);
   --report-details-bg: rgba(0, 0, 0, 0.22);
   --report-details-border: #37474f;
@@ -81,6 +88,13 @@
   --report-hint: #b45309;
   --report-status: #c2410c;
   --report-time: #2563eb;
+  --jira-status-todo: #7c3aed;
+  --jira-status-progress: #b45309;
+  --jira-status-review: #0284c7;
+  --jira-status-done: var(--task-done);
+  --jira-status-blocked: var(--danger);
+  --jira-status-neutral: var(--muted);
+  --jira-status-default: var(--report-status);
   --report-issue-border: rgba(212, 222, 237, 0.95);
   --report-details-bg: rgba(61, 108, 245, 0.06);
   --report-details-border: #d4deed;
@@ -3353,4 +3367,37 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
   margin: 0;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+.jira-issue-fact dd.jira-issue-status {
+  font-weight: 650;
+  color: var(--jira-status-fg, var(--jira-status-default));
+}
+
+.jira-issue-status--todo {
+  --jira-status-fg: var(--jira-status-todo);
+}
+
+.jira-issue-status--progress {
+  --jira-status-fg: var(--jira-status-progress);
+}
+
+.jira-issue-status--review {
+  --jira-status-fg: var(--jira-status-review);
+}
+
+.jira-issue-status--done {
+  --jira-status-fg: var(--jira-status-done);
+}
+
+.jira-issue-status--blocked {
+  --jira-status-fg: var(--jira-status-blocked);
+}
+
+.jira-issue-status--neutral {
+  --jira-status-fg: var(--jira-status-neutral);
+}
+
+.jira-issue-status--default {
+  --jira-status-fg: var(--jira-status-default);
 }

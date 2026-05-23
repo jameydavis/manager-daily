@@ -73,30 +73,90 @@ export function adfToPlainText(node: unknown): string {
 
 /** Common Jira story / issue template section titles (case-insensitive). */
 export const ISSUE_DESCRIPTION_SUBHEADINGS = [
-  "What",
-  "Why",
+  "Acceptance Criteria",
+  "Action Items",
+  "Actual Behavior",
+  "API Changes",
+  "Approach",
+  "Architecture",
+  "Assumptions",
+  "Background",
+  "Business Value",
+  "Checklist",
+  "Constraints",
+  "Context",
+  "Database Changes",
+  "Definition of Done",
+  "Dependencies",
+  "Description",
+  "Design",
+  "Details",
+  "Dev Notes",
+  "Developer Notes",
+  "Documentation",
+  "DoD",
+  "Done",
+  "Environment",
+  "Expected Behavior",
+  "Follow Up",
+  "Follow-up",
+  "Future Work",
+  "Goals",
   "How",
-  "Who",
+  "Impact",
+  "Implementation",
+  "Implementation Notes",
+  "In Scope",
+  "Links",
+  "Migration",
+  "Monitoring",
+  "Next Steps",
+  "Non-Goals",
+  "Notes",
+  "Objective",
+  "Open Items",
+  "Open Questions",
+  "Out of Scope",
+  "Out of scope",
+  "Overview",
+  "Performance",
+  "Plan",
+  "Problem",
+  "Proposal",
+  "QA",
+  "QA Notes",
+  "References",
+  "Related Work",
+  "Release Plan",
+  "Requirements",
+  "Resources",
+  "Risks",
+  "Rollout",
+  "Rollout Plan",
+  "Scope",
+  "Security",
+  "Solution",
+  "Steps to Reproduce",
+  "Stakeholders",
+  "Success Criteria",
+  "Success Metrics",
+  "Summary",
+  "Tasks",
+  "Technical Approach",
+  "Technical Details",
+  "Technical Notes",
+  "Test Plan",
+  "Testing",
+  "Timeline",
+  "To Do",
+  "User Impact",
+  "User Story",
+  "What",
   "When",
   "Where",
-  "Context",
-  "Background",
-  "Summary",
-  "Notes",
-  "Acceptance Criteria",
-  "Definition of Done",
-  "DoD",
-  "Requirements",
-  "Out of scope",
-  "Dependencies",
-  "Risks",
-  "Testing",
-  "User Story",
-  "Problem",
-  "Solution",
-  "Scope",
-  "Goals",
-  "Objective",
+  "Who",
+  "Why",
+  "Workaround",
 ] as const;
 
 export type IssueDescriptionSection = {
@@ -104,12 +164,17 @@ export type IssueDescriptionSection = {
   body: string;
 };
 
+/** Match a standalone template subheading line; returns canonical title or null. */
+export function matchIssueDescriptionSubheading(line: string): string | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  const normalized = trimmed.replace(/:+\s*$/, "").toLowerCase();
+  return ISSUE_DESCRIPTION_SUBHEADINGS.find((h) => h.toLowerCase() === normalized) ?? null;
+}
+
 /** True when a description line is a standalone template subheading (e.g. "What" or "Why:"). */
 export function isIssueDescriptionSubheading(line: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed) return false;
-  const normalized = trimmed.replace(/:+\s*$/, "").toLowerCase();
-  return ISSUE_DESCRIPTION_SUBHEADINGS.some((h) => h.toLowerCase() === normalized);
+  return matchIssueDescriptionSubheading(line) != null;
 }
 
 /** Split plain-text issue descriptions into template sections for modal rendering. */
@@ -131,9 +196,10 @@ export function parseIssueDescriptionSections(text: string): IssueDescriptionSec
   };
 
   for (const line of lines) {
-    if (isIssueDescriptionSubheading(line)) {
+    const matched = matchIssueDescriptionSubheading(line);
+    if (matched) {
       flush();
-      currentHeading = line.trim().replace(/:+\s*$/, "");
+      currentHeading = matched;
     } else {
       bodyLines.push(line);
     }
