@@ -3283,6 +3283,7 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 
 .jira-issue-description {
   margin: 0;
+  padding-top: 1rem;
   font-size: 0.92rem;
   line-height: 1.55;
   color: var(--text);
@@ -3293,14 +3294,14 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 .jira-issue-description--structured {
   display: flex;
   flex-direction: column;
-  gap: 1.85rem;
+  gap: 1.35rem;
   white-space: normal;
 }
 
 .jira-issue-description-section {
-  position: relative;
-  isolation: isolate;
-  --description-body-inset: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .jira-issue-description-section--plain .jira-issue-description-body {
@@ -3308,32 +3309,17 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 }
 
 .jira-issue-description-subhead {
-  position: absolute;
-  top: var(--description-body-inset);
-  left: -0.02em;
-  z-index: 0;
   margin: 0;
-  font-size: calc(0.92rem * 3);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: 0.05em;
+  font-size: calc(0.92rem * 2);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 32%, transparent);
-  pointer-events: none;
-  user-select: none;
-  /* Align the lower third with body text; upper two-thirds sit above. */
-  transform: translateY(-66.666%);
-}
-
-html[data-theme="light"] .jira-issue-description-subhead {
-  color: color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--accent);
 }
 
 .jira-issue-description-body {
-  position: relative;
-  z-index: 1;
   margin: 0;
-  padding-top: var(--description-body-inset, 0.35rem);
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.55;

@@ -296,8 +296,6 @@
     }
 
     descriptionEl.classList.add("jira-issue-description--structured");
-    const labelEl = document.getElementById("jira-issue-modal-description-label");
-    if (labelEl) labelEl.hidden = true;
     descriptionEl.innerHTML = list
       .map((section) => {
         const heading = typeof section.heading === "string" ? section.heading.trim() : "";
@@ -308,7 +306,7 @@
         }
         return `
           <section class="jira-issue-description-section">
-            <div class="jira-issue-description-subhead" aria-hidden="true">${escapeHtml(heading)}</div>
+            <h4 class="jira-issue-description-subhead">${escapeHtml(heading)}</h4>
             <div class="jira-issue-description-body">${body ? escapeHtml(body) : '<span class="jira-issue-description-empty">—</span>'}</div>
           </section>
         `;
