@@ -52,6 +52,9 @@ import {
   prevCalendarDay,
   previousCalendarDays,
   sprintDaysLeftPhrase,
+  sprintDaysLeftInclusive,
+  sprintInclusiveDaysBetween,
+  sprintProgressPercent,
   today,
 } from "./dates.js";
 
@@ -513,6 +516,18 @@ app.get("/", async (req, res, next) => {
         ? `${jiraBoardName?.trim() || sprintName?.trim() || "Current sprint"} — ${sprintDaysLeftPhrase(today(), sprintHighlightEnd)}`
         : "Calendar";
 
+    const sprintContext =
+      sprintHighlightStart && sprintHighlightEnd
+        ? {
+            name: (jiraBoardName?.trim() || sprintName?.trim() || "Current sprint").trim(),
+            start: sprintHighlightStart,
+            end: sprintHighlightEnd,
+            daysLeft: sprintDaysLeftInclusive(today(), sprintHighlightEnd),
+            totalDays: sprintInclusiveDaysBetween(sprintHighlightStart, sprintHighlightEnd),
+            progressPct: sprintProgressPercent(today(), sprintHighlightStart, sprintHighlightEnd),
+          }
+        : null;
+
     const reportLines = parseDirectReportNamesFromEnv();
     let directReports: Awaited<ReturnType<typeof enrichDirectReportsWithIssues>> = [];
     let directReportsError: string | null = null;
@@ -552,6 +567,7 @@ app.get("/", async (req, res, next) => {
       jiraBoardId,
       sprintBoardError,
       sprintRangeActive,
+      sprintContext,
       calendarHeading,
       todayISO: today(),
       prevMonthStart,

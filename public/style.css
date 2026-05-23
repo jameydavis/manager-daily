@@ -3050,22 +3050,215 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
   text-decoration: underline;
 }
 
-.jira-issue-facts-row {
+.jira-issue-dashboard {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1rem 1.5rem;
-  align-items: start;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  min-height: 9.5rem;
+  margin-bottom: 0.85rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-inset);
   flex-shrink: 0;
+}
+
+.jira-issue-dashboard-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.jira-issue-widget-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.jira-issue-facts--dashboard {
+  gap: 0.45rem;
+}
+
+.jira-issue-facts--dashboard .jira-issue-fact {
+  grid-template-columns: 5.5rem 1fr;
+  font-size: 0.84rem;
+}
+
+.jira-issue-widget {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 6.5rem;
+}
+
+.jira-widget-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.jira-widget-caption {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted);
+  text-align: center;
+}
+
+.jira-ring {
+  position: relative;
+  width: 5.25rem;
+  height: 5.25rem;
+  margin: 0 auto;
+}
+
+.jira-ring-chart {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--ring-color, var(--accent)) calc(var(--ring-pct, 0) * 1%),
+    color-mix(in srgb, var(--border) 88%, transparent) 0
+  );
+}
+
+.jira-ring-chart--accent {
+  --ring-color: var(--accent);
+}
+
+.jira-ring-chart--done {
+  --ring-color: var(--task-done);
+}
+
+.jira-ring-chart--danger {
+  --ring-color: var(--danger);
+}
+
+.jira-ring-center {
+  position: absolute;
+  inset: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--panel);
+  text-align: center;
+  padding: 0.15rem;
+}
+
+.jira-ring-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.jira-ring-label {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.jira-progress {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.jira-progress-track {
+  height: 0.42rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 72%, transparent);
+  overflow: hidden;
+}
+
+.jira-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 65%, var(--task-done)));
+}
+
+.jira-progress-label {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--muted);
+  text-align: center;
+}
+
+.jira-time-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.jira-time-stat {
+  display: grid;
+  gap: 0.12rem;
+  text-align: center;
+}
+
+.jira-time-stat-value {
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.jira-time-stat-label {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.jira-time-bars {
+  display: flex;
+  align-items: stretch;
+  height: 0.45rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.jira-time-bar {
+  height: 100%;
+}
+
+.jira-time-bar--logged {
+  background: var(--accent);
+}
+
+.jira-time-bar--over {
+  background: var(--danger);
+}
+
+@media (max-width: 860px) {
+  .jira-issue-dashboard {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .jira-issue-widget {
+    min-height: 0;
+  }
 }
 
 .jira-issue-facts {
   margin: 0;
   display: grid;
   gap: 0.55rem;
-  flex-shrink: 0;
-}
-
-.jira-issue-reporter-wrap {
   flex-shrink: 0;
 }
 

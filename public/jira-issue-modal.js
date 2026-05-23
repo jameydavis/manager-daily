@@ -8,14 +8,16 @@
   const typeEl = document.getElementById("jira-issue-modal-type");
   const titleLink = document.getElementById("jira-issue-modal-title-link");
   const statusEl = document.getElementById("jira-issue-modal-status");
-  const timeRow = document.getElementById("jira-issue-modal-time-row");
   const timeEl = document.getElementById("jira-issue-modal-time");
   const assigneeRow = document.getElementById("jira-issue-modal-assignee-row");
   const assigneeEl = document.getElementById("jira-issue-modal-assignee");
   const reporterRow = document.getElementById("jira-issue-modal-reporter-row");
   const reporterEl = document.getElementById("jira-issue-modal-reporter");
   const estimateEl = document.getElementById("jira-issue-modal-estimate");
+  const sprintWidgetEl = document.getElementById("jira-issue-modal-sprint-widget");
+  const timeWidgetEl = document.getElementById("jira-issue-modal-time-widget");
   const descriptionEl = document.getElementById("jira-issue-modal-description");
+  const sprintContextEl = document.getElementById("dashboard-sprint-context");
 
   if (
     !dialog ||
@@ -24,19 +26,30 @@
     !typeEl ||
     !titleLink ||
     !statusEl ||
-    !timeRow ||
     !timeEl ||
     !assigneeRow ||
     !assigneeEl ||
     !reporterRow ||
     !reporterEl ||
     !estimateEl ||
+    !sprintWidgetEl ||
+    !timeWidgetEl ||
     !descriptionEl
   ) {
     return;
   }
 
   let detailsRequest = 0;
+
+  /** @type {{ name: string; start: string; end: string; daysLeft: number; totalDays: number | null; progressPct: number | null } | null} */
+  let sprintContext = null;
+  if (sprintContextEl && sprintContextEl.textContent) {
+    try {
+      sprintContext = JSON.parse(sprintContextEl.textContent);
+    } catch {
+      sprintContext = null;
+    }
+  }
 
   /** @param {string} raw */
   function parseIssuePayload(raw) {
@@ -48,6 +61,150 @@
     } catch {
       return null;
     }
+  }
+
+  /** @param {string} text */
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /** @param {number | null | undefined} sec */
+  function formatHoursMinutes(sec) {
+    if (sec == null || sec <= 0) return "—";
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    if (m > 0) return `${m}m`;
+    return "<1m";
+  }
+
+  /**
+   * @param {number} pct
+   * @param {string} value
+   * @param {string} label
+   * @param {string} [caption]
+   * @param {"accent" | "done" | "danger"} [tone]
+   */
+  function ringWidget(pct, value, label, caption, tone = "accent") {
+    const p = Math.min(100, Math.max(0, Math.round(pct)));
+    return `
+      <div class="jira-ring">
+        <div class="jira-ring-chart jira-ring-chart--${tone}" style="--ring-pct: ${p}" aria-hidden="true"></div>
+        <div class="jira-ring-center">
+          <span class="jira-ring-value">${escapeHtml(value)}</span>
+          <span class="jira-ring-label">${escapeHtml(label)}</span>
+        </div>
+      </div>
+      ${caption ? `<p class="jira-widget-caption">${escapeHtml(caption)}</p>` : ""}
+    `;
+  }
+
+  /** @param {number} pct */
+  function progressBar(pct, label) {
+    const p = Math.min(100, Math.max(0, Math.round(pct)));
+    return `
+      <div class="jira-progress">
+        <div class="jira-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}" aria-label="${escapeHtml(label)}">
+          <div class="jira-progress-fill" style="width: ${p}%"></div>
+        </div>
+        <span class="jira-progress-label">${escapeHtml(label)}</span>
+      </div>
+    `;
+  }
+
+  function renderSprintWidget() {
+    if (!sprintContext || !sprintContext.start || !sprintContext.end) {
+      sprintWidgetEl.innerHTML = '<p class="jira-widget-empty">No active sprint configured.</p>';
+      return;
+    }
+
+    const daysLeft = typeof sprintContext.daysLeft === "number" ? sprintContext.daysLeft : 0;
+    const totalDays = typeof sprintContext.totalDays === "number" ? sprintContext.totalDays : null;
+    const progressPct =
+      typeof sprintContext.progressPct === "number" ? sprintContext.progressPct : 0;
+    const remainingPct =
+      totalDays && totalDays > 0 ? Math.round((daysLeft / totalDays) * 100) : 0;
+    const daysLabel = daysLeft === 1 ? "day left" : "days left";
+    const name = typeof sprintContext.name === "string" ? sprintContext.name : "Current sprint";
+    const timelineLabel =
+      totalDays != null ? `${progressPct}% through sprint · ${totalDays} days total` : `${progressPct}% through sprint`;
+
+    sprintWidgetEl.innerHTML = `
+      ${ringWidget(remainingPct, String(daysLeft), daysLabel, name, daysLeft <= 2 ? "danger" : "accent")}
+      ${progressBar(progressPct, timelineLabel)}
+    `;
+  }
+
+  /**
+   * @param {string | null | undefined} timeLoggedLabel
+   * @param {number | null | undefined} loggedSec
+   * @param {number | null | undefined} estimateSec
+   * @param {string | null | undefined} estimateLabel
+   */
+  function renderTimeWidget(timeLoggedLabel, loggedSec, estimateSec, estimateLabel) {
+    const loggedText =
+      typeof timeLoggedLabel === "string" && timeLoggedLabel.trim()
+        ? timeLoggedLabel.trim()
+        : formatHoursMinutes(loggedSec);
+    const estimateText =
+      typeof estimateLabel === "string" && estimateLabel.trim() && estimateLabel.trim() !== "—"
+        ? estimateLabel.trim()
+        : formatHoursMinutes(estimateSec);
+
+  if (estimateSec == null || estimateSec <= 0) {
+      timeWidgetEl.innerHTML = `
+        <div class="jira-time-stats">
+          <div class="jira-time-stat">
+            <span class="jira-time-stat-value">${escapeHtml(loggedText)}</span>
+            <span class="jira-time-stat-label">Logged</span>
+          </div>
+          <div class="jira-time-stat">
+            <span class="jira-time-stat-value">${escapeHtml(estimateText)}</span>
+            <span class="jira-time-stat-label">Estimate</span>
+          </div>
+        </div>
+        <p class="jira-widget-empty">No original estimate set in Jira.</p>
+      `;
+      return;
+    }
+
+    const logged = loggedSec != null && loggedSec > 0 ? loggedSec : 0;
+    const pct = Math.round((logged / estimateSec) * 100);
+    const remainingSec = estimateSec - logged;
+    const over = remainingSec < 0;
+    const tone = over ? "danger" : pct >= 85 ? "done" : "accent";
+    const ringValue = over ? "100+" : `${Math.min(100, pct)}%`;
+    const ringLabel = over ? "over estimate" : "of estimate used";
+    const remainingText = over
+      ? `${formatHoursMinutes(Math.abs(remainingSec))} over`
+      : formatHoursMinutes(remainingSec);
+
+    timeWidgetEl.innerHTML = `
+      ${ringWidget(Math.min(100, pct), ringValue, ringLabel, undefined, tone)}
+      <div class="jira-time-stats">
+        <div class="jira-time-stat">
+          <span class="jira-time-stat-value">${escapeHtml(loggedText)}</span>
+          <span class="jira-time-stat-label">Logged</span>
+        </div>
+        <div class="jira-time-stat">
+          <span class="jira-time-stat-value">${escapeHtml(estimateText)}</span>
+          <span class="jira-time-stat-label">Estimate</span>
+        </div>
+        <div class="jira-time-stat">
+          <span class="jira-time-stat-value">${escapeHtml(remainingText)}</span>
+          <span class="jira-time-stat-label">${over ? "Over" : "Remaining"}</span>
+        </div>
+      </div>
+      <div class="jira-time-bars" aria-hidden="true">
+        <div class="jira-time-bar jira-time-bar--logged" style="width: ${Math.min(100, pct)}%"></div>
+        ${over ? `<div class="jira-time-bar jira-time-bar--over" style="width: ${Math.min(40, pct - 100)}%"></div>` : ""}
+      </div>
+    `;
   }
 
   /** @param {string | null | undefined} text */
@@ -79,11 +236,19 @@
     estimateEl.hidden = false;
   }
 
+  /** @param {string | null | undefined} text */
+  function setTimeLoggedDisplay(text) {
+    const t = typeof text === "string" ? text.trim() : "";
+    timeEl.textContent = t && t !== "—" ? t : "—";
+  }
+
   /** @param {string} key */
   async function loadIssueDetails(key) {
     const requestId = ++detailsRequest;
     setReporterDisplay("…");
     setEstimateDisplay("…");
+    setTimeLoggedDisplay("…");
+    renderTimeWidget("…", null, null, "…");
     descriptionEl.textContent = "Loading description…";
     descriptionEl.classList.add("jira-issue-description--loading");
 
@@ -99,14 +264,26 @@
         const msg = typeof data.error === "string" ? data.error : "Could not load issue details.";
         setReporterDisplay("—");
         setEstimateDisplay("—");
+        setTimeLoggedDisplay("—");
+        renderTimeWidget("—", null, null, "—");
         descriptionEl.textContent = msg;
         descriptionEl.classList.remove("jira-issue-description--loading");
         descriptionEl.classList.add("jira-issue-description--error");
         return;
       }
 
+      const estimateLabel =
+        typeof data.originalEstimate === "string" ? data.originalEstimate : "—";
+      const timeLoggedLabel = typeof data.timeLogged === "string" ? data.timeLogged : "—";
+      const loggedSec =
+        typeof data.timeLoggedSeconds === "number" ? data.timeLoggedSeconds : null;
+      const estimateSec =
+        typeof data.originalEstimateSeconds === "number" ? data.originalEstimateSeconds : null;
+
       setReporterDisplay(typeof data.reporter === "string" ? data.reporter : "—");
-      setEstimateDisplay(typeof data.originalEstimate === "string" ? data.originalEstimate : "—");
+      setEstimateDisplay(estimateLabel);
+      setTimeLoggedDisplay(timeLoggedLabel);
+      renderTimeWidget(timeLoggedLabel, loggedSec, estimateSec, estimateLabel);
 
       const text = typeof data.description === "string" ? data.description.trim() : "";
       descriptionEl.textContent = text || "No description.";
@@ -115,6 +292,8 @@
       if (requestId !== detailsRequest) return;
       setReporterDisplay("—");
       setEstimateDisplay("—");
+      setTimeLoggedDisplay("—");
+      renderTimeWidget("—", null, null, "—");
       descriptionEl.textContent = "Could not load issue details.";
       descriptionEl.classList.remove("jira-issue-description--loading");
       descriptionEl.classList.add("jira-issue-description--error");
@@ -132,13 +311,7 @@
     statusEl.textContent = issue.status || "—";
 
     const time = typeof issue.timeLogged === "string" ? issue.timeLogged.trim() : "";
-    if (time && time !== "—") {
-      timeEl.textContent = time;
-      timeRow.hidden = false;
-    } else {
-      timeEl.textContent = "";
-      timeRow.hidden = true;
-    }
+    setTimeLoggedDisplay(time || "—");
 
     const assignee = typeof issue.assignee === "string" ? issue.assignee.trim() : "";
     if (assignee) {
@@ -148,6 +321,9 @@
       assigneeEl.textContent = "";
       assigneeRow.hidden = true;
     }
+
+    renderSprintWidget();
+    renderTimeWidget(time || "—", null, null, "…");
 
     descriptionEl.classList.remove("jira-issue-description--error");
     setReporterDisplay("…");

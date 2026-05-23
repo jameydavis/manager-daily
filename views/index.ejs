@@ -392,6 +392,7 @@
       </div>
     </dialog>
   </aside>
+  <script type="application/json" id="dashboard-sprint-context"><%- JSON.stringify(sprintContext).replace(/</g, '\\u003c') %></script>
   <%- include('partials/jira-issue-modal') %>
   <script src="/toasts.js" defer></script>
   <script src="/jira-issue-modal.js" defer></script>

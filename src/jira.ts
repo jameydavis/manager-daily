@@ -119,6 +119,8 @@ type IssueModalFieldsResponse = {
     description?: unknown;
     reporter?: { displayName?: string };
     timeoriginalestimate?: number | null;
+    timespent?: number | null;
+    aggregatetimespent?: number | null;
     timetracking?: { originalEstimate?: string };
   };
 };
@@ -127,7 +129,24 @@ export type JiraIssueModalDetails = {
   description: string;
   originalEstimate: string;
   reporter: string;
+  timeLogged: string;
+  timeLoggedSeconds: number | null;
+  originalEstimateSeconds: number | null;
 };
+
+function parseTimeLoggedSeconds(fields: IssueModalFieldsResponse["fields"]): number | null {
+  const agg = fields?.aggregatetimespent;
+  const ts = fields?.timespent;
+  if (agg != null && agg > 0) return Math.floor(agg);
+  if (ts != null && ts > 0) return Math.floor(ts);
+  return null;
+}
+
+function parseOriginalEstimateSeconds(fields: IssueModalFieldsResponse["fields"]): number | null {
+  const sec = fields?.timeoriginalestimate;
+  if (sec != null && sec > 0) return Math.floor(sec);
+  return null;
+}
 
 function parseOriginalEstimate(fields: IssueModalFieldsResponse["fields"]): string {
   const human = fields?.timetracking?.originalEstimate?.trim();
@@ -143,16 +162,28 @@ function parseReporter(fields: IssueModalFieldsResponse["fields"]): string {
 /** Fetch description, reporter, and original estimate for the detail modal. */
 export async function fetchIssueModalDetails(env: JiraEnv, key: string): Promise<JiraIssueModalDetails> {
   const normalized = key.trim().toUpperCase();
-  const fieldList = ["description", "reporter", "timeoriginalestimate", "timetracking"];
+  const fieldList = [
+    "description",
+    "reporter",
+    "timeoriginalestimate",
+    "timetracking",
+    "timespent",
+    "aggregatetimespent",
+  ];
   const data = (await jiraRequestJson(
     env,
     `/rest/api/3/issue/${encodeURIComponent(normalized)}?fields=${encodeURIComponent(fieldList.join(","))}`
   )) as IssueModalFieldsResponse;
   const fields = data.fields;
+  const timeLoggedSeconds = parseTimeLoggedSeconds(fields);
+  const originalEstimateSeconds = parseOriginalEstimateSeconds(fields);
   return {
     description: adfToPlainText(fields?.description),
     originalEstimate: parseOriginalEstimate(fields),
     reporter: parseReporter(fields),
+    timeLogged: formatDurationSeconds(timeLoggedSeconds),
+    timeLoggedSeconds,
+    originalEstimateSeconds,
   };
 }
 

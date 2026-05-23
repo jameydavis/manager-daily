@@ -19,16 +19,52 @@ export function today(): string {
 }
 
 /** Inclusive calendar days from today through sprint end; 0 if today is after end. */
-export function sprintDaysLeftPhrase(todayISO: string, sprintEndISO: string): string {
+export function sprintDaysLeftInclusive(todayISO: string, sprintEndISO: string): number {
   const t = parseDay(todayISO);
   const e = parseDay(sprintEndISO);
-  if (!t || !e) return "";
+  if (!t || !e) return 0;
   const msPerDay = 24 * 60 * 60 * 1000;
   const diff = Math.round((e.getTime() - t.getTime()) / msPerDay);
-  const inclusive = diff + 1;
-  const days = Math.max(0, inclusive);
+  return Math.max(0, diff + 1);
+}
+
+export function sprintDaysLeftPhrase(todayISO: string, sprintEndISO: string): string {
+  const days = sprintDaysLeftInclusive(todayISO, sprintEndISO);
   if (days === 1) return "1 day left";
   return `${days} days left`;
+}
+
+/** Inclusive day count for a sprint window (minimum 1). */
+export function sprintInclusiveDaysBetween(startISO: string, endISO: string): number | null {
+  const s = parseDay(startISO);
+  const e = parseDay(endISO);
+  if (!s || !e) return null;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const diff = Math.round((e.getTime() - s.getTime()) / msPerDay);
+  return Math.max(1, diff + 1);
+}
+
+/** Inclusive elapsed days from sprint start through today, clamped to the sprint window. */
+export function sprintElapsedInclusive(todayISO: string, startISO: string, endISO: string): number {
+  const t = parseDay(todayISO);
+  const s = parseDay(startISO);
+  const e = parseDay(endISO);
+  if (!t || !s || !e) return 0;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  if (t.getTime() < s.getTime()) return 0;
+  if (t.getTime() > e.getTime()) {
+    return sprintInclusiveDaysBetween(startISO, endISO) ?? 0;
+  }
+  const diff = Math.round((t.getTime() - s.getTime()) / msPerDay);
+  return diff + 1;
+}
+
+/** Sprint timeline progress as 0–100 for dashboard charts. */
+export function sprintProgressPercent(todayISO: string, startISO: string, endISO: string): number | null {
+  const total = sprintInclusiveDaysBetween(startISO, endISO);
+  if (total == null) return null;
+  const elapsed = sprintElapsedInclusive(todayISO, startISO, endISO);
+  return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
 }
 
 export function prevCalendarDay(day: string): string | null {

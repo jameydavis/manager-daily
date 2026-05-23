@@ -4,6 +4,10 @@ import {
   parseDay,
   today,
   sprintDaysLeftPhrase,
+  sprintDaysLeftInclusive,
+  sprintInclusiveDaysBetween,
+  sprintElapsedInclusive,
+  sprintProgressPercent,
   prevCalendarDay,
   previousCalendarDays,
   monthGrid,
@@ -57,6 +61,15 @@ describe("sprintDaysLeftPhrase", () => {
 
   it("returns 0 days left when today is after end", () => {
     expect(sprintDaysLeftPhrase("2026-05-01", "2026-04-28")).toBe("0 days left");
+  });
+});
+
+describe("sprint dashboard metrics", () => {
+  it("computes inclusive sprint length and progress", () => {
+    expect(sprintInclusiveDaysBetween("2026-04-01", "2026-04-10")).toBe(10);
+    expect(sprintDaysLeftInclusive("2026-04-05", "2026-04-10")).toBe(6);
+    expect(sprintElapsedInclusive("2026-04-05", "2026-04-01", "2026-04-10")).toBe(5);
+    expect(sprintProgressPercent("2026-04-05", "2026-04-01", "2026-04-10")).toBe(50);
   });
 });
 
