@@ -171,8 +171,8 @@
     return loadStoredPetName() || DEFAULT_PET_NAME;
   }
 
-  function applyPetLabels() {
-    const name = getPetDisplayName();
+  function applyPetLabelsWithName(rawName) {
+    const name = (typeof rawName === "string" && rawName.trim()) || DEFAULT_PET_NAME;
     root.querySelectorAll(".desk-pet-title").forEach((el) => {
       el.textContent = name;
     });
@@ -188,6 +188,10 @@
     if (reviveHintEl) reviveHintEl.textContent = `${name} went too long without a meal. Wake them with a little care.`;
     root.setAttribute("aria-label", name);
     creature.setAttribute("aria-label", `Tickle ${name}`);
+  }
+
+  function applyPetLabels() {
+    applyPetLabelsWithName(loadStoredPetName());
   }
 
   const UI_COLLAPSED_KEY = "dailyDashboardDeskPetUiCollapsed";
@@ -218,12 +222,16 @@
   const settingsDialog = document.getElementById("desk-pet-settings");
   const settingsOpenBtn = document.getElementById("desk-pet-settings-open");
   const settingsCloseBtn = document.getElementById("desk-pet-settings-close");
-  const settingsDoneBtn = document.getElementById("desk-pet-settings-done");
+  const settingsSaveBtn = document.getElementById("desk-pet-settings-save");
   const cornerSelect = document.getElementById("desk-pet-corner");
   const paletteSelect = document.getElementById("desk-pet-palette");
   const nameInput = document.getElementById("desk-pet-name");
   const nameHintEl = document.getElementById("desk-pet-name-hint");
   const nameRandomBtn = document.getElementById("desk-pet-name-random");
+
+  let settingsEditing = false;
+  /** @type {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} */
+  let settingsDraft = { name: "", corner: "br", palette: "lavender" };
 
   function updateNameFieldFeedback() {
     if (!nameHintEl || !nameInput) return;
@@ -325,38 +333,111 @@
     paletteSelect.value = loadPalettePref();
   }
 
+  if (paletteSelect) {
+    paletteSelect.value = loadPalettePref();
+  }
+
+  /** @returns {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} */
+  function readSavedAppearanceSettings() {
+    return {
+      name: loadStoredPetName(),
+      corner: loadCornerPref(),
+      palette: loadPalettePref(),
+    };
+  }
+
+  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} appearance */
+  function applyAppearancePreview(appearance) {
+    applyCornerPref(appearance.corner);
+    applyPalettePref(appearance.palette);
+    applyPetLabelsWithName(appearance.name);
+  }
+
+  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} appearance */
+  function persistAppearanceSettings(appearance) {
+    const name = typeof appearance.name === "string" ? appearance.name.trim().slice(0, MAX_PET_NAME_LEN) : "";
+    try {
+      if (!name) localStorage.removeItem(PET_NAME_KEY);
+      else localStorage.setItem(PET_NAME_KEY, name);
+      localStorage.setItem(CORNER_KEY, appearance.corner);
+      localStorage.setItem(PALETTE_KEY, appearance.palette);
+    } catch {
+      /* ignore */
+    }
+    applyAppearancePreview({ ...appearance, name });
+  }
+
+  function revertAppearanceToSaved() {
+    const saved = readSavedAppearanceSettings();
+    applyAppearancePreview(saved);
+    if (cornerSelect) cornerSelect.value = saved.corner;
+    if (paletteSelect) paletteSelect.value = saved.palette;
+    if (nameInput) nameInput.value = saved.name;
+    updateNameFieldFeedback();
+  }
+
+  function updateSettingsDraftFromForm() {
+    if (nameInput) settingsDraft.name = nameInput.value;
+    if (cornerSelect) {
+      const v = cornerSelect.value;
+      if (v === "br" || v === "bl" || v === "tr" || v === "tl") settingsDraft.corner = v;
+    }
+    if (paletteSelect) {
+      const v = paletteSelect.value;
+      if (/** @type {readonly string[]} */ (PALETTE_IDS).includes(v)) {
+        settingsDraft.palette = /** @type {(typeof PALETTE_IDS)[number]} */ (v);
+      }
+    }
+  }
+
   if (settingsDialog && settingsOpenBtn && cornerSelect && typeof settingsDialog.showModal === "function") {
     settingsOpenBtn.addEventListener("click", () => {
-      cornerSelect.value = loadCornerPref();
-      if (paletteSelect) paletteSelect.value = loadPalettePref();
-      if (nameInput) nameInput.value = loadStoredPetName();
+      settingsDraft = readSavedAppearanceSettings();
+      if (nameInput) nameInput.value = settingsDraft.name;
+      cornerSelect.value = settingsDraft.corner;
+      if (paletteSelect) paletteSelect.value = settingsDraft.palette;
       updateNameFieldFeedback();
+      settingsEditing = true;
       settingsDialog.showModal();
     });
-    const closeSettings = () => {
+    settingsCloseBtn?.addEventListener("click", () => {
+      settingsEditing = false;
+      revertAppearanceToSaved();
+      if (settingsDialog.open) settingsDialog.close();
+    });
+    settingsSaveBtn?.addEventListener("click", () => {
       if (nameInput && nameInput.value.length > MAX_PET_NAME_LEN) {
         nameInput.value = nameInput.value.slice(0, MAX_PET_NAME_LEN);
-        saveStoredPetName(nameInput.value);
-        applyPetLabels();
-        updateNameFieldFeedback();
       }
+      updateSettingsDraftFromForm();
+      settingsEditing = false;
+      persistAppearanceSettings(settingsDraft);
       if (settingsDialog.open) settingsDialog.close();
-    };
-    settingsCloseBtn?.addEventListener("click", closeSettings);
-    settingsDoneBtn?.addEventListener("click", closeSettings);
+      void flushAppearanceSettingsToServer();
+    });
     settingsDialog.addEventListener("click", (e) => {
-      if (e.target === settingsDialog) closeSettings();
+      if (e.target !== settingsDialog) return;
+      settingsEditing = false;
+      revertAppearanceToSaved();
+      settingsDialog.close();
     });
     cornerSelect.addEventListener("change", () => {
       const v = cornerSelect.value;
       if (v !== "br" && v !== "bl" && v !== "tr" && v !== "tl") return;
+      if (settingsEditing) {
+        settingsDraft.corner = v;
+        applyCornerPref(v);
+        return;
+      }
       applyCornerPref(v);
       saveCornerPref(v);
     });
     nameInput?.addEventListener("input", () => {
-      if (nameInput.value.length <= MAX_PET_NAME_LEN) {
-        saveStoredPetName(nameInput.value);
-        applyPetLabels();
+      if (settingsEditing) {
+        settingsDraft.name = nameInput.value;
+        if (nameInput.value.length <= MAX_PET_NAME_LEN) {
+          applyPetLabelsWithName(nameInput.value);
+        }
       }
       updateNameFieldFeedback();
     });
@@ -364,8 +445,8 @@
       if (!nameInput) return;
       const pick = CUTE_PET_NAMES[Math.floor(Math.random() * CUTE_PET_NAMES.length)];
       nameInput.value = pick;
-      saveStoredPetName(pick);
-      applyPetLabels();
+      settingsDraft.name = pick;
+      applyPetLabelsWithName(pick);
       updateNameFieldFeedback();
       nameInput.focus();
     });
@@ -380,8 +461,14 @@
   paletteSelect?.addEventListener("change", () => {
     const v = paletteSelect.value;
     if (!/** @type {readonly string[]} */ (PALETTE_IDS).includes(v)) return;
-    applyPalettePref(/** @type {(typeof PALETTE_IDS)[number]} */ (v));
-    savePalettePref(/** @type {(typeof PALETTE_IDS)[number]} */ (v));
+    const palette = /** @type {(typeof PALETTE_IDS)[number]} */ (v);
+    if (settingsEditing) {
+      settingsDraft.palette = palette;
+      applyPalettePref(palette);
+      return;
+    }
+    applyPalettePref(palette);
+    savePalettePref(palette);
   });
 
   applyPetLabels();
@@ -605,6 +692,14 @@
     } catch {
       /* ignore */
     }
+  }
+
+  async function flushAppearanceSettingsToServer() {
+    if (syncPushTimer) {
+      window.clearTimeout(syncPushTimer);
+      syncPushTimer = 0;
+    }
+    await pushSyncToServer();
   }
 
   async function mergeDeskPetFromServer() {
