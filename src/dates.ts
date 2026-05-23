@@ -23,7 +23,7 @@ function isWeekday(d: Date): boolean {
   return dow >= 1 && dow <= 5;
 }
 
-/** Inclusive weekday count between two ISO dates (Mon–Fri only). */
+/** Inclusive day count between two ISO dates (Mon–Fri only). */
 export function countWeekdaysInclusive(fromISO: string, toISO: string): number {
   const from = parseDay(fromISO);
   const to = parseDay(toISO);
@@ -43,7 +43,7 @@ export function countWeekdaysInclusive(fromISO: string, toISO: string): number {
   return count;
 }
 
-/** Inclusive weekdays from today through sprint end; 0 if today is after end. */
+/** Inclusive days from today through sprint end (Mon–Fri only); 0 if today is after end. */
 export function sprintDaysLeftInclusive(todayISO: string, sprintEndISO: string): number {
   const t = parseDay(todayISO);
   const e = parseDay(sprintEndISO);
@@ -54,11 +54,11 @@ export function sprintDaysLeftInclusive(todayISO: string, sprintEndISO: string):
 
 export function sprintDaysLeftPhrase(todayISO: string, sprintEndISO: string): string {
   const days = sprintDaysLeftInclusive(todayISO, sprintEndISO);
-  if (days === 1) return "1 weekday left";
-  return `${days} weekdays left`;
+  if (days === 1) return "1 day left";
+  return `${days} days left`;
 }
 
-/** Inclusive weekday count for a sprint window. */
+/** Inclusive day count for a sprint window (Mon–Fri only). */
 export function sprintInclusiveDaysBetween(startISO: string, endISO: string): number | null {
   const s = parseDay(startISO);
   const e = parseDay(endISO);
@@ -67,7 +67,7 @@ export function sprintInclusiveDaysBetween(startISO: string, endISO: string): nu
   return count > 0 ? count : null;
 }
 
-/** Inclusive elapsed weekdays from sprint start through today, clamped to the sprint window. */
+/** Inclusive elapsed days from sprint start through today, clamped to the sprint window (Mon–Fri only). */
 export function sprintElapsedInclusive(todayISO: string, startISO: string, endISO: string): number {
   const t = parseDay(todayISO);
   const s = parseDay(startISO);
