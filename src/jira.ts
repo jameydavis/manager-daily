@@ -71,6 +71,81 @@ export function adfToPlainText(node: unknown): string {
   return inner;
 }
 
+/** Common Jira story / issue template section titles (case-insensitive). */
+export const ISSUE_DESCRIPTION_SUBHEADINGS = [
+  "What",
+  "Why",
+  "How",
+  "Who",
+  "When",
+  "Where",
+  "Context",
+  "Background",
+  "Summary",
+  "Notes",
+  "Acceptance Criteria",
+  "Definition of Done",
+  "DoD",
+  "Requirements",
+  "Out of scope",
+  "Dependencies",
+  "Risks",
+  "Testing",
+  "User Story",
+  "Problem",
+  "Solution",
+  "Scope",
+  "Goals",
+  "Objective",
+] as const;
+
+export type IssueDescriptionSection = {
+  heading: string | null;
+  body: string;
+};
+
+/** True when a description line is a standalone template subheading (e.g. "What" or "Why:"). */
+export function isIssueDescriptionSubheading(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  const normalized = trimmed.replace(/:+\s*$/, "").toLowerCase();
+  return ISSUE_DESCRIPTION_SUBHEADINGS.some((h) => h.toLowerCase() === normalized);
+}
+
+/** Split plain-text issue descriptions into template sections for modal rendering. */
+export function parseIssueDescriptionSections(text: string): IssueDescriptionSection[] {
+  const normalized = text.replace(/\r\n/g, "\n").trim();
+  if (!normalized) return [];
+
+  const lines = normalized.split("\n");
+  const sections: IssueDescriptionSection[] = [];
+  let currentHeading: string | null = null;
+  let bodyLines: string[] = [];
+
+  const flush = () => {
+    const body = bodyLines.join("\n").trim();
+    if (currentHeading != null || body) {
+      sections.push({ heading: currentHeading, body });
+    }
+    bodyLines = [];
+  };
+
+  for (const line of lines) {
+    if (isIssueDescriptionSubheading(line)) {
+      flush();
+      currentHeading = line.trim().replace(/:+\s*$/, "");
+    } else {
+      bodyLines.push(line);
+    }
+  }
+  flush();
+
+  if (sections.length === 1 && sections[0]!.heading == null) {
+    return sections;
+  }
+  return sections.filter((s) => s.heading != null || s.body.length > 0);
+}
+
 /** Format Jira duration seconds for modal display (e.g. original estimate). */
 export function formatDurationSeconds(totalSeconds: number | null | undefined): string {
   if (totalSeconds == null || totalSeconds <= 0) return "—";
@@ -143,6 +218,7 @@ export type JiraSubtaskProgress = {
 
 export type JiraIssueModalDetails = {
   description: string;
+  descriptionSections: IssueDescriptionSection[];
   originalEstimate: string;
   reporter: string;
   timeLogged: string;
@@ -315,8 +391,10 @@ export async function fetchIssueModalDetails(env: JiraEnv, key: string): Promise
   const fields = data.fields;
   const timeLoggedSeconds = parseTimeLoggedSeconds(fields);
   const originalEstimateSeconds = parseOriginalEstimateSeconds(fields);
+  const description = adfToPlainText(fields?.description);
   return {
-    description: adfToPlainText(fields?.description),
+    description,
+    descriptionSections: parseIssueDescriptionSections(description),
     originalEstimate: parseOriginalEstimate(fields),
     reporter: parseReporter(fields),
     timeLogged: formatDurationSeconds(timeLoggedSeconds),

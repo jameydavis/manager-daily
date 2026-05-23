@@ -255,6 +255,68 @@
     timeEl.textContent = t && t !== "—" ? t : "—";
   }
 
+  /**
+   * @param {Array<{ heading?: string | null; body?: string }> | null | undefined} sections
+   * @param {string} fallbackText
+   * @param {"plain" | "loading" | "error"} mode
+   */
+  function renderDescriptionDisplay(sections, fallbackText, mode = "plain") {
+    descriptionEl.classList.remove(
+      "jira-issue-description--structured",
+      "jira-issue-description--loading",
+      "jira-issue-description--error"
+    );
+
+    if (mode === "loading") {
+      const labelEl = document.getElementById("jira-issue-modal-description-label");
+      if (labelEl) labelEl.hidden = false;
+      descriptionEl.textContent = "Loading description…";
+      descriptionEl.classList.add("jira-issue-description--loading");
+      return;
+    }
+    if (mode === "error") {
+      const labelEl = document.getElementById("jira-issue-modal-description-label");
+      if (labelEl) labelEl.hidden = false;
+      descriptionEl.textContent = fallbackText || "Could not load issue details.";
+      descriptionEl.classList.add("jira-issue-description--error");
+      return;
+    }
+
+    const list = Array.isArray(sections) ? sections : [];
+    const hasSubheads = list.some((s) => typeof s.heading === "string" && s.heading.trim());
+
+    if (!hasSubheads) {
+      const labelEl = document.getElementById("jira-issue-modal-description-label");
+      if (labelEl) labelEl.hidden = false;
+      const text =
+        (list.length === 1 && typeof list[0]?.body === "string" ? list[0].body.trim() : "") ||
+        (typeof fallbackText === "string" ? fallbackText.trim() : "");
+      descriptionEl.textContent = text || "No description.";
+      return;
+    }
+
+    descriptionEl.classList.add("jira-issue-description--structured");
+    const labelEl = document.getElementById("jira-issue-modal-description-label");
+    if (labelEl) labelEl.hidden = true;
+    descriptionEl.innerHTML = list
+      .map((section) => {
+        const heading = typeof section.heading === "string" ? section.heading.trim() : "";
+        const body = typeof section.body === "string" ? section.body.trim() : "";
+        if (!heading) {
+          if (!body) return "";
+          return `<div class="jira-issue-description-section jira-issue-description-section--plain"><div class="jira-issue-description-body">${escapeHtml(body)}</div></div>`;
+        }
+        return `
+          <section class="jira-issue-description-section">
+            <div class="jira-issue-description-subhead" aria-hidden="true">${escapeHtml(heading)}</div>
+            <div class="jira-issue-description-body">${body ? escapeHtml(body) : '<span class="jira-issue-description-empty">—</span>'}</div>
+          </section>
+        `;
+      })
+      .filter(Boolean)
+      .join("");
+  }
+
   /** @param {string} key */
   async function loadIssueDetails(key) {
     const requestId = ++detailsRequest;
@@ -263,8 +325,7 @@
     setTimeLoggedDisplay("…");
     renderSubtaskWidget(null, "loading");
     renderStalenessWidget(null, "loading");
-    descriptionEl.textContent = "Loading description…";
-    descriptionEl.classList.add("jira-issue-description--loading");
+    renderDescriptionDisplay(null, "", "loading");
 
     try {
       const res = await fetch(`/api/jira/issues/${encodeURIComponent(key)}`, {
@@ -281,9 +342,7 @@
         setTimeLoggedDisplay("—");
         renderSubtaskWidget(null, "error");
         renderStalenessWidget(null, "error");
-        descriptionEl.textContent = msg;
-        descriptionEl.classList.remove("jira-issue-description--loading");
-        descriptionEl.classList.add("jira-issue-description--error");
+        renderDescriptionDisplay(null, msg, "error");
         return;
       }
 
@@ -304,8 +363,8 @@
       );
 
       const text = typeof data.description === "string" ? data.description.trim() : "";
-      descriptionEl.textContent = text || "No description.";
-      descriptionEl.classList.remove("jira-issue-description--loading", "jira-issue-description--error");
+      const sections = Array.isArray(data.descriptionSections) ? data.descriptionSections : null;
+      renderDescriptionDisplay(sections, text, "plain");
     } catch {
       if (requestId !== detailsRequest) return;
       setReporterDisplay("—");
@@ -313,9 +372,7 @@
       setTimeLoggedDisplay("—");
       renderSubtaskWidget(null, "error");
       renderStalenessWidget(null, "error");
-      descriptionEl.textContent = "Could not load issue details.";
-      descriptionEl.classList.remove("jira-issue-description--loading");
-      descriptionEl.classList.add("jira-issue-description--error");
+      renderDescriptionDisplay(null, "Could not load issue details.", "error");
     }
   }
 
@@ -344,6 +401,7 @@
     renderSprintWidget();
     renderSubtaskWidget(null, "loading");
     renderStalenessWidget(null, "loading");
+    renderDescriptionDisplay(null, "", "loading");
 
     descriptionEl.classList.remove("jira-issue-description--error");
     setReporterDisplay("…");

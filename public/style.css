@@ -3290,6 +3290,59 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
   word-break: break-word;
 }
 
+.jira-issue-description--structured {
+  display: flex;
+  flex-direction: column;
+  gap: 1.85rem;
+  white-space: normal;
+}
+
+.jira-issue-description-section {
+  position: relative;
+  isolation: isolate;
+}
+
+.jira-issue-description-section--plain .jira-issue-description-body {
+  white-space: pre-wrap;
+}
+
+.jira-issue-description-subhead {
+  position: absolute;
+  top: 0;
+  left: -0.02em;
+  z-index: 0;
+  margin: 0;
+  font-size: calc(0.92rem * 3);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 32%, transparent);
+  pointer-events: none;
+  user-select: none;
+  transform: translateY(33%);
+}
+
+html[data-theme="light"] .jira-issue-description-subhead {
+  color: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+.jira-issue-description-body {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding-top: 0.35rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.jira-issue-description-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
 .jira-issue-description--loading {
   color: var(--muted);
   font-style: italic;

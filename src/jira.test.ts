@@ -181,3 +181,28 @@ describe("countSubtaskProgress", () => {
     expect(countSubtaskProgress([])).toEqual({ total: 0, done: 0 });
   });
 });
+
+describe("parseIssueDescriptionSections", () => {
+  it("recognizes template subheadings with optional colons", async () => {
+    const { isIssueDescriptionSubheading, parseIssueDescriptionSections } = await import("./jira.js");
+    expect(isIssueDescriptionSubheading("What")).toBe(true);
+    expect(isIssueDescriptionSubheading("Why:")).toBe(true);
+    expect(isIssueDescriptionSubheading("What we need")).toBe(false);
+
+    const sections = parseIssueDescriptionSections(
+      "What\nBuild the modal flair.\n\nWhy\nManagers need scan-friendly stories.\n\nHow\nCSS watermark headings."
+    );
+    expect(sections).toEqual([
+      { heading: "What", body: "Build the modal flair." },
+      { heading: "Why", body: "Managers need scan-friendly stories." },
+      { heading: "How", body: "CSS watermark headings." },
+    ]);
+  });
+
+  it("returns a single unheaded section when no template titles appear", async () => {
+    const { parseIssueDescriptionSections } = await import("./jira.js");
+    expect(parseIssueDescriptionSections("Plain description only.")).toEqual([
+      { heading: null, body: "Plain description only." },
+    ]);
+  });
+});
