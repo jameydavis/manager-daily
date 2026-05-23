@@ -3070,15 +3070,6 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
   min-width: 0;
 }
 
-.jira-issue-widget-title {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-}
-
 .jira-issue-facts--dashboard {
   gap: 0.45rem;
 }
