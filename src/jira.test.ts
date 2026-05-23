@@ -167,3 +167,17 @@ describe("parseLastStatusChangeAt", () => {
     expect(parseLastStatusChangeAt(undefined)).toBeNull();
   });
 });
+
+describe("countSubtaskProgress", () => {
+  it("counts done children using Jira status category", async () => {
+    const { countSubtaskProgress } = await import("./jira.js");
+    expect(
+      countSubtaskProgress([
+        { fields: { status: { statusCategory: { key: "done" } } } },
+        { fields: { status: { statusCategory: { key: "indeterminate" } } } },
+        { fields: { status: { statusCategory: { key: "done" } } } },
+      ])
+    ).toEqual({ total: 3, done: 2 });
+    expect(countSubtaskProgress([])).toEqual({ total: 0, done: 0 });
+  });
+});

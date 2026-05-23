@@ -136,6 +136,11 @@ export type JiraIssueStaleness = {
   daysSinceStatusChange: number;
 };
 
+export type JiraSubtaskProgress = {
+  total: number;
+  done: number;
+};
+
 export type JiraIssueModalDetails = {
   description: string;
   originalEstimate: string;
@@ -144,6 +149,7 @@ export type JiraIssueModalDetails = {
   timeLoggedSeconds: number | null;
   originalEstimateSeconds: number | null;
   staleness: JiraIssueStaleness | null;
+  subtaskProgress: JiraSubtaskProgress | null;
 };
 
 type ChangelogHistory = {
@@ -223,6 +229,43 @@ async function fetchLastStatusChangeAt(env: JiraEnv, key: string): Promise<strin
   return parseLastStatusChangeAt(page.values);
 }
 
+type SubtaskSearchResponse = {
+  issues?: Array<{
+    fields?: {
+      status?: { statusCategory?: { key?: string } };
+    };
+  }>;
+};
+
+/** Count done vs total child issues from a Jira parent search (`parent = KEY`). */
+export function countSubtaskProgress(
+  issues: SubtaskSearchResponse["issues"]
+): JiraSubtaskProgress {
+  const list = issues ?? [];
+  let done = 0;
+  for (const issue of list) {
+    if (issue.fields?.status?.statusCategory?.key === "done") done += 1;
+  }
+  return { total: list.length, done };
+}
+
+async function fetchSubtaskProgress(env: JiraEnv, parentKey: string): Promise<JiraSubtaskProgress | null> {
+  try {
+    const body = {
+      jql: `parent = ${parentKey}`,
+      maxResults: 100,
+      fields: ["status"],
+    };
+    const data = (await jiraRequestJson(env, "/rest/api/3/search/jql", {
+      method: "POST",
+      body: JSON.stringify(body),
+    })) as SubtaskSearchResponse;
+    return countSubtaskProgress(data.issues);
+  } catch {
+    return null;
+  }
+}
+
 function parseTimeLoggedSeconds(fields: IssueModalFieldsResponse["fields"]): number | null {
   const agg = fields?.aggregatetimespent;
   const ts = fields?.timespent;
@@ -261,12 +304,13 @@ export async function fetchIssueModalDetails(env: JiraEnv, key: string): Promise
     "timespent",
     "aggregatetimespent",
   ];
-  const [data, lastStatusChangeAt] = await Promise.all([
+  const [data, lastStatusChangeAt, subtaskProgress] = await Promise.all([
     jiraRequestJson(
       env,
       `/rest/api/3/issue/${encodeURIComponent(normalized)}?fields=${encodeURIComponent(fieldList.join(","))}`
     ) as Promise<IssueModalFieldsResponse>,
     fetchLastStatusChangeAt(env, normalized),
+    fetchSubtaskProgress(env, normalized),
   ]);
   const fields = data.fields;
   const timeLoggedSeconds = parseTimeLoggedSeconds(fields);
@@ -279,6 +323,7 @@ export async function fetchIssueModalDetails(env: JiraEnv, key: string): Promise
     timeLoggedSeconds,
     originalEstimateSeconds,
     staleness: buildStaleness(fields?.created, fields?.updated, lastStatusChangeAt),
+    subtaskProgress,
   };
 }
 
