@@ -3300,6 +3300,7 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 .jira-issue-description-section {
   position: relative;
   isolation: isolate;
+  --description-body-inset: 0.35rem;
 }
 
 .jira-issue-description-section--plain .jira-issue-description-body {
@@ -3308,7 +3309,7 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 
 .jira-issue-description-subhead {
   position: absolute;
-  top: 0;
+  top: var(--description-body-inset);
   left: -0.02em;
   z-index: 0;
   margin: 0;
@@ -3320,7 +3321,8 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
   color: color-mix(in srgb, var(--accent) 32%, transparent);
   pointer-events: none;
   user-select: none;
-  transform: translateY(33%);
+  /* Align the lower third with body text; upper two-thirds sit above. */
+  transform: translateY(-66.666%);
 }
 
 html[data-theme="light"] .jira-issue-description-subhead {
@@ -3331,7 +3333,7 @@ html[data-theme="light"] .jira-issue-description-subhead {
   position: relative;
   z-index: 1;
   margin: 0;
-  padding-top: 0.35rem;
+  padding-top: var(--description-body-inset, 0.35rem);
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.55;
