@@ -14,6 +14,7 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
   const timeEl = document.getElementById("jira-issue-modal-time");
   const assigneeRow = document.getElementById("jira-issue-modal-assignee-row");
   const assigneeEl = document.getElementById("jira-issue-modal-assignee");
+  const developerEl = document.getElementById("jira-issue-modal-developer");
   const reporterRow = document.getElementById("jira-issue-modal-reporter-row");
   const reporterEl = document.getElementById("jira-issue-modal-reporter");
   const estimateEl = document.getElementById("jira-issue-modal-estimate");
@@ -33,6 +34,7 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
     !timeEl ||
     !assigneeRow ||
     !assigneeEl ||
+    !developerEl ||
     !reporterRow ||
     !reporterEl ||
     !estimateEl ||
@@ -77,24 +79,75 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
       .replace(/"/g, "&quot;");
   }
 
+  /** @param {string} label */
+  function compactRingLoggedDuration(label) {
+    return label
+      .replace(/\bhours?\b/gi, "h")
+      .replace(/\bminutes?\b/gi, "m")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  /** @param {string} label @returns {string[]} */
+  function ringEstimateLabelLines(label) {
+    const text = label.trim();
+    if (!text || text === "—") return ["—"];
+
+    const dayToken = text.match(/^(\d+)\s*d$/i);
+    if (dayToken) {
+      const n = parseInt(dayToken[1], 10);
+      return [`of ${n}`, n === 1 ? "Day" : "Days"];
+    }
+
+    const dayWords = text.match(/^(\d+)\s+days?$/i);
+    if (dayWords) {
+      const n = parseInt(dayWords[1], 10);
+      return [`of ${n}`, n === 1 ? "Day" : "Days"];
+    }
+
+    const spelled = text
+      .replace(/\bweeks?\b/gi, (m) => (m.toLowerCase() === "week" ? "Week" : "Weeks"))
+      .replace(/\bdays?\b/gi, (m) => (m.toLowerCase() === "day" ? "Day" : "Days"))
+      .replace(/\bhours?\b/gi, (m) => (m.toLowerCase() === "hour" ? "Hour" : "Hours"))
+      .replace(/\bminutes?\b/gi, (m) => (m.toLowerCase() === "minute" ? "Minute" : "Minutes"));
+
+    return [`of ${spelled}`];
+  }
+
   /**
    * @param {number} pct
    * @param {string} value
-   * @param {string} label
-   * @param {string} [caption]
+   * @param {string | string[]} label
    * @param {"accent" | "done" | "danger"} [tone]
+   * @param {boolean} [compact]
    */
-  function ringWidget(pct, value, label, caption, tone = "accent") {
+  function ringWidget(pct, value, label, tone = "accent", compact = false) {
     const p = Math.min(100, Math.max(0, Math.round(pct)));
+    const labelLines = Array.isArray(label) ? label : [label];
+    const labelHtml = labelLines
+      .map((line) => `<span class="jira-ring-label">${escapeHtml(line)}</span>`)
+      .join("");
     return `
-      <div class="jira-ring">
+      <div class="jira-ring${compact ? " jira-ring--compact" : ""}">
         <div class="jira-ring-chart jira-ring-chart--${tone}" style="--ring-pct: ${p}" aria-hidden="true"></div>
         <div class="jira-ring-center">
           <span class="jira-ring-value">${escapeHtml(value)}</span>
-          <span class="jira-ring-label">${escapeHtml(label)}</span>
+          ${labelHtml}
         </div>
       </div>
-      ${caption ? `<p class="jira-widget-caption">${escapeHtml(caption)}</p>` : ""}
+    `;
+  }
+
+  /**
+   * @param {string} ringHtml
+   * @param {string} barHtml
+   */
+  function dashboardMetricWidget(ringHtml, barHtml) {
+    return `
+      <div class="jira-widget-body">
+        ${ringHtml}
+        ${barHtml}
+      </div>
     `;
   }
 
@@ -106,9 +159,14 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
         <div class="jira-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}" aria-label="${escapeHtml(label)}">
           <div class="jira-progress-fill" style="width: ${p}%"></div>
         </div>
-        <span class="jira-progress-label">${escapeHtml(label)}</span>
       </div>
     `;
+  }
+
+  function formatSprintDaysLeftValue(daysLeft) {
+    if (daysLeft === 0) return "0";
+    if (Number.isInteger(daysLeft)) return String(daysLeft);
+    return daysLeft.toFixed(1);
   }
 
   function renderSprintWidget() {
@@ -124,16 +182,20 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
     const remainingPct =
       totalDays && totalDays > 0 ? Math.round((daysLeft / totalDays) * 100) : 0;
     const daysLabel = daysLeft === 1 ? "day left" : "days left";
-    const name = typeof sprintContext.name === "string" ? sprintContext.name : "Current sprint";
     const timelineLabel =
       totalDays != null
         ? `${progressPct}% through sprint · ${totalDays} days total`
         : `${progressPct}% through sprint`;
 
-    sprintWidgetEl.innerHTML = `
-      ${ringWidget(remainingPct, String(daysLeft), daysLabel, name, daysLeft <= 2 ? "danger" : "accent")}
-      ${progressBar(progressPct, timelineLabel)}
-    `;
+    sprintWidgetEl.innerHTML = dashboardMetricWidget(
+      ringWidget(
+        remainingPct,
+        formatSprintDaysLeftValue(daysLeft),
+        daysLabel,
+        daysLeft <= 2 ? "danger" : "accent"
+      ),
+      progressBar(progressPct, timelineLabel)
+    );
   }
 
   /**
@@ -176,36 +238,76 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
 
   /**
    * @param {{ total?: number; done?: number } | null | undefined} progress
+   * @param {{ timeLoggedSeconds?: number | null; originalEstimateSeconds?: number | null; timeLogged?: string; originalEstimate?: string } | null | undefined} timeBudget
    * @param {"loading" | "error" | "ready"} [mode]
    */
-  function renderSubtaskWidget(progress, mode = "ready") {
+  function renderSubtaskWidget(progress, timeBudget, mode = "ready") {
     if (mode === "loading") {
-      subtaskWidgetEl.innerHTML = '<p class="jira-widget-empty">Loading subtasks…</p>';
+      subtaskWidgetEl.innerHTML = '<p class="jira-widget-empty">Loading progress…</p>';
       return;
     }
-    if (mode === "error" || !progress) {
-      subtaskWidgetEl.innerHTML = '<p class="jira-widget-empty">Subtask progress unavailable.</p>';
-      return;
-    }
-
-    const total = typeof progress.total === "number" ? progress.total : 0;
-    const done = typeof progress.done === "number" ? progress.done : 0;
-    if (total <= 0) {
-      subtaskWidgetEl.innerHTML = '<p class="jira-widget-empty">No subtasks on this issue.</p>';
+    if (mode === "error") {
+      subtaskWidgetEl.innerHTML = '<p class="jira-widget-empty">Progress unavailable.</p>';
       return;
     }
 
-    const open = Math.max(0, total - done);
-    const pct = Math.round((done / total) * 100);
-    const tone = pct >= 100 ? "done" : pct <= 25 ? "danger" : "accent";
-    const ringLabel = total === 1 ? "subtask done" : "subtasks done";
-    const barLabel =
-      open === 0 ? `${pct}% complete · all done` : `${pct}% complete · ${open} open`;
+    const total = progress && typeof progress.total === "number" ? progress.total : 0;
+    const done = progress && typeof progress.done === "number" ? progress.done : 0;
+    if (total > 0) {
+      const open = Math.max(0, total - done);
+      const pct = Math.round((done / total) * 100);
+      const tone = pct >= 100 ? "done" : pct <= 25 ? "danger" : "accent";
+      const ringLabel = total === 1 ? "subtask done" : "subtasks done";
+      const barLabel =
+        open === 0 ? `${pct}% complete · all done` : `${pct}% complete · ${open} open`;
 
-    subtaskWidgetEl.innerHTML = `
-      ${ringWidget(pct, `${done}/${total}`, ringLabel, undefined, tone)}
-      ${progressBar(pct, barLabel)}
-    `;
+      subtaskWidgetEl.innerHTML = dashboardMetricWidget(
+        ringWidget(pct, `${done}/${total}`, ringLabel, tone),
+        progressBar(pct, barLabel)
+      );
+      return;
+    }
+
+    const estimateSec =
+      timeBudget && typeof timeBudget.originalEstimateSeconds === "number"
+        ? timeBudget.originalEstimateSeconds
+        : null;
+    const loggedSec =
+      timeBudget && typeof timeBudget.timeLoggedSeconds === "number" ? timeBudget.timeLoggedSeconds : 0;
+
+    if (estimateSec != null && estimateSec > 0) {
+      const pctRaw = Math.round((loggedSec / estimateSec) * 100);
+      const pct = Math.min(100, pctRaw);
+      const tone = pctRaw >= 100 ? "danger" : pctRaw >= 80 ? "danger" : "accent";
+      const loggedLabel =
+        typeof timeBudget?.timeLogged === "string" && timeBudget.timeLogged.trim()
+          ? timeBudget.timeLogged.trim()
+          : "0m";
+      const estimateLabel =
+        typeof timeBudget?.originalEstimate === "string" && timeBudget.originalEstimate.trim()
+          ? timeBudget.originalEstimate.trim()
+          : "—";
+      const barLabel =
+        pctRaw > 100
+          ? `${pctRaw}% of estimate · over budget`
+          : pctRaw >= 100
+            ? `${pctRaw}% of estimate · at budget`
+            : `${pctRaw}% of estimate used`;
+
+      subtaskWidgetEl.innerHTML = dashboardMetricWidget(
+        ringWidget(
+          pct,
+          compactRingLoggedDuration(loggedLabel),
+          ringEstimateLabelLines(estimateLabel),
+          tone,
+          true
+        ),
+        progressBar(pct, barLabel)
+      );
+      return;
+    }
+
+    subtaskWidgetEl.innerHTML = '<p class="jira-widget-empty">No subtasks on this issue.</p>';
   }
 
   /** @param {string | null | undefined} status */
@@ -217,6 +319,23 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
   }
 
   /** @param {string | null | undefined} text */
+  function setAssigneeDisplay(name) {
+    const assignee = typeof name === "string" ? name.trim() : "";
+    if (assignee) {
+      assigneeEl.textContent = assignee;
+      assigneeRow.hidden = false;
+      developerEl.textContent = assignee;
+      developerEl.hidden = false;
+      developerEl.title = assignee;
+      return;
+    }
+    assigneeEl.textContent = "";
+    assigneeRow.hidden = true;
+    developerEl.textContent = "";
+    developerEl.hidden = true;
+    developerEl.removeAttribute("title");
+  }
+
   function setReporterDisplay(text) {
     const t = typeof text === "string" ? text.trim() : "";
     if (!t || t === "—") {
@@ -311,7 +430,7 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
     setReporterDisplay("…");
     setEstimateDisplay("…");
     setTimeLoggedDisplay("…");
-    renderSubtaskWidget(null, "loading");
+    renderSubtaskWidget(null, null, "loading");
     renderStalenessWidget(null, "loading");
     renderDescriptionDisplay(null, "", "loading");
 
@@ -328,7 +447,7 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
         setReporterDisplay("—");
         setEstimateDisplay("—");
         setTimeLoggedDisplay("—");
-        renderSubtaskWidget(null, "error");
+        renderSubtaskWidget(null, null, "error");
         renderStalenessWidget(null, "error");
         renderDescriptionDisplay(null, msg, "error");
         return;
@@ -342,7 +461,15 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
       setEstimateDisplay(estimateLabel);
       setTimeLoggedDisplay(timeLoggedLabel);
       renderSubtaskWidget(
-        data.subtaskProgress && typeof data.subtaskProgress === "object" ? data.subtaskProgress : null,
+        data.subtaskProgress && typeof data.subtaskProgress === "object" ? data.subtaskProgress : { total: 0, done: 0 },
+        {
+          timeLogged: timeLoggedLabel,
+          originalEstimate: estimateLabel,
+          timeLoggedSeconds:
+            typeof data.timeLoggedSeconds === "number" ? data.timeLoggedSeconds : null,
+          originalEstimateSeconds:
+            typeof data.originalEstimateSeconds === "number" ? data.originalEstimateSeconds : null,
+        },
         "ready"
       );
       renderStalenessWidget(
@@ -358,7 +485,7 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
       setReporterDisplay("—");
       setEstimateDisplay("—");
       setTimeLoggedDisplay("—");
-      renderSubtaskWidget(null, "error");
+      renderSubtaskWidget(null, null, "error");
       renderStalenessWidget(null, "error");
       renderDescriptionDisplay(null, "Could not load issue details.", "error");
     }
@@ -377,17 +504,10 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
     const time = typeof issue.timeLogged === "string" ? issue.timeLogged.trim() : "";
     setTimeLoggedDisplay(time || "—");
 
-    const assignee = typeof issue.assignee === "string" ? issue.assignee.trim() : "";
-    if (assignee) {
-      assigneeEl.textContent = assignee;
-      assigneeRow.hidden = false;
-    } else {
-      assigneeEl.textContent = "";
-      assigneeRow.hidden = true;
-    }
+    setAssigneeDisplay(issue.assignee);
 
     renderSprintWidget();
-    renderSubtaskWidget(null, "loading");
+    renderSubtaskWidget(null, null, "loading");
     renderStalenessWidget(null, "loading");
     renderDescriptionDisplay(null, "", "loading");
 

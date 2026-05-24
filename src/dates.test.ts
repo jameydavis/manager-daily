@@ -5,6 +5,8 @@ import {
   today,
   sprintDaysLeftPhrase,
   sprintDaysLeftInclusive,
+  roundToHalfDay,
+  sprintDaysLeftHalfDay,
   sprintInclusiveDaysBetween,
   sprintElapsedInclusive,
   sprintProgressPercent,
@@ -74,6 +76,42 @@ describe("sprint dashboard metrics", () => {
     expect(sprintDaysLeftInclusive("2026-04-05", "2026-04-10")).toBe(5);
     expect(sprintElapsedInclusive("2026-04-05", "2026-04-01", "2026-04-10")).toBe(3);
     expect(sprintProgressPercent("2026-04-05", "2026-04-01", "2026-04-10")).toBe(38);
+  });
+});
+
+describe("roundToHalfDay", () => {
+  it("rounds to the nearest half-day increment", () => {
+    expect(roundToHalfDay(0)).toBe(0);
+    expect(roundToHalfDay(2.24)).toBe(2);
+    expect(roundToHalfDay(2.25)).toBe(2.5);
+    expect(roundToHalfDay(2.74)).toBe(2.5);
+    expect(roundToHalfDay(2.75)).toBe(3);
+  });
+});
+
+describe("sprintDaysLeftHalfDay", () => {
+  it("uses the remaining fraction of today on weekdays", () => {
+    expect(
+      sprintDaysLeftHalfDay("2026-04-24", "2026-04-28", new Date(2026, 3, 24, 9, 0, 0))
+    ).toBe(2.5);
+    expect(
+      sprintDaysLeftHalfDay("2026-04-24", "2026-04-28", new Date(2026, 3, 24, 12, 0, 0))
+    ).toBe(2.5);
+    expect(
+      sprintDaysLeftHalfDay("2026-04-24", "2026-04-28", new Date(2026, 3, 24, 23, 59, 0))
+    ).toBe(2);
+  });
+
+  it("keeps whole weekday counts on weekends", () => {
+    expect(
+      sprintDaysLeftHalfDay("2026-04-25", "2026-04-28", new Date(2026, 3, 25, 12, 0, 0))
+    ).toBe(2);
+  });
+
+  it("returns 0 when today is after sprint end", () => {
+    expect(
+      sprintDaysLeftHalfDay("2026-05-01", "2026-04-28", new Date(2026, 4, 1, 12, 0, 0))
+    ).toBe(0);
   });
 });
 

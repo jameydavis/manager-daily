@@ -32,6 +32,20 @@ export function getAppearanceRevisionFromPayload(payload: DeskPetAppearanceRevis
   return "";
 }
 
+/** True when a save only touched game state and must not overwrite stored appearance. */
+export function shouldPreserveExistingAppearance(
+  incoming: DeskPetAppearanceRevisionPayload,
+  existing: DeskPetAppearanceRevisionPayload | null | undefined
+): boolean {
+  if (!existing) return false;
+  const explicitIncoming =
+    typeof incoming.appearanceUpdatedAt === "string" && incoming.appearanceUpdatedAt.length > 0;
+  if (!explicitIncoming) return true;
+  const incomingAt = incoming.appearanceUpdatedAt!;
+  const existingAt = getAppearanceRevisionFromPayload(existing);
+  return parseUpdatedAtMs(incomingAt) <= parseUpdatedAtMs(existingAt);
+}
+
 /** Decide how signed-in desk buddy state should merge on load. */
 export function planDeskPetSyncMerge(ts: DeskPetSyncTimestamps): DeskPetSyncMergePlan {
   let shouldPushLocal = false;

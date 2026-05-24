@@ -41,6 +41,7 @@ import {
   upsertUserDeskPetState,
   type TaskRow,
 } from "./db.js";
+import { shouldPreserveExistingAppearance } from "./client/deskPetSyncMerge.js";
 import { deskPetSyncStateSchema, parseDeskPetSyncState } from "./deskPetState.js";
 import { DEFAULT_JIRA_JQL, encodeJiraIssueForModal, fetchIssueModalDetails, getJiraEnv, isValidJiraIssueKey, searchIssues } from "./jira.js";
 import { mergeJiraCredentialsIntoDotenv } from "./dotenvMerge.js";
@@ -52,7 +53,7 @@ import {
   prevCalendarDay,
   previousCalendarDays,
   sprintDaysLeftPhrase,
-  sprintDaysLeftInclusive,
+  sprintDaysLeftHalfDay,
   sprintInclusiveDaysBetween,
   sprintProgressPercent,
   today,
@@ -415,7 +416,25 @@ app.put("/api/desk-pet", (req, res) => {
     res.status(400).json({ error: "Invalid desk buddy state." });
     return;
   }
-  upsertUserDeskPetState(user.id, JSON.stringify(body.data.state));
+  let nextState = body.data.state;
+  const row = getUserDeskPetState(user.id);
+  if (row) {
+    try {
+      const existing = parseDeskPetSyncState(JSON.parse(row.state_json));
+      if (existing && shouldPreserveExistingAppearance(nextState, existing)) {
+        nextState = {
+          ...nextState,
+          displayName: existing.displayName,
+          corner: existing.corner,
+          palette: existing.palette,
+          appearanceUpdatedAt: existing.appearanceUpdatedAt,
+        };
+      }
+    } catch {
+      /* keep incoming */
+    }
+  }
+  upsertUserDeskPetState(user.id, JSON.stringify(nextState));
   res.json({ ok: true, updatedAt: body.data.state.updatedAt });
 });
 
@@ -522,7 +541,7 @@ app.get("/", async (req, res, next) => {
             name: (jiraBoardName?.trim() || sprintName?.trim() || "Current sprint").trim(),
             start: sprintHighlightStart,
             end: sprintHighlightEnd,
-            daysLeft: sprintDaysLeftInclusive(today(), sprintHighlightEnd),
+            daysLeft: sprintDaysLeftHalfDay(today(), sprintHighlightEnd),
             totalDays: sprintInclusiveDaysBetween(sprintHighlightStart, sprintHighlightEnd),
             progressPct: sprintProgressPercent(today(), sprintHighlightStart, sprintHighlightEnd),
           }

@@ -43,6 +43,12 @@ export function countWeekdaysInclusive(fromISO: string, toISO: string): number {
   return count;
 }
 
+/** Round a day count to the nearest half-day increment. */
+export function roundToHalfDay(days: number): number {
+  if (!Number.isFinite(days) || days <= 0) return 0;
+  return Math.round(days * 2) / 2;
+}
+
 /** Inclusive days from today through sprint end (Mon–Fri only); 0 if today is after end. */
 export function sprintDaysLeftInclusive(todayISO: string, sprintEndISO: string): number {
   const t = parseDay(todayISO);
@@ -50,6 +56,27 @@ export function sprintDaysLeftInclusive(todayISO: string, sprintEndISO: string):
   if (!t || !e) return 0;
   if (t.getTime() > e.getTime()) return 0;
   return countWeekdaysInclusive(todayISO, sprintEndISO);
+}
+
+/**
+ * Sprint days remaining rounded to half-day increments.
+ * Treats the rest of today as a fractional weekday based on local time elapsed.
+ */
+export function sprintDaysLeftHalfDay(
+  todayISO: string,
+  sprintEndISO: string,
+  now: Date = new Date()
+): number {
+  const whole = sprintDaysLeftInclusive(todayISO, sprintEndISO);
+  if (whole === 0) return 0;
+
+  const today = parseDay(todayISO);
+  if (!today || !isWeekday(today)) return roundToHalfDay(whole);
+
+  const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const elapsed = Math.min(1, Math.max(0, (now.getTime() - dayStart) / 86_400_000));
+  const todayRemaining = 1 - elapsed;
+  return roundToHalfDay(whole - 1 + todayRemaining);
 }
 
 export function sprintDaysLeftPhrase(todayISO: string, sprintEndISO: string): string {

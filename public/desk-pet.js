@@ -652,10 +652,12 @@ import {
   }
 
   function buildSyncPayload() {
+    ensureAppearanceRevisionSeeded();
     const updatedAt = new Date().toISOString();
     writeSyncMetaUpdatedAt(updatedAt);
-    const appearanceUpdatedAt = readAppearanceRevision() || updatedAt;
-    return {
+    const appearanceUpdatedAt = readAppearanceRevision();
+    /** @type {Record<string, unknown>} */
+    const payload = {
       v: 1,
       game: {
         fullness: state.fullness,
@@ -670,9 +672,12 @@ import {
       corner: loadCornerPref(),
       palette: loadPalettePref(),
       uiCollapsed: collapsed,
-      appearanceUpdatedAt,
       updatedAt,
     };
+    if (appearanceUpdatedAt) {
+      payload.appearanceUpdatedAt = appearanceUpdatedAt;
+    }
+    return payload;
   }
 
   function applyGameFromSync(game) {
@@ -694,10 +699,12 @@ import {
 
   /** @param {ReturnType<typeof buildSyncPayload>} payload */
   function applyAppearanceFromSync(payload) {
-    const name =
+    const remoteName =
       typeof payload.displayName === "string"
         ? payload.displayName.trim().slice(0, MAX_PET_NAME_LEN)
-        : loadStoredPetName();
+        : "";
+    const localName = loadStoredPetName();
+    const name = remoteName || localName;
     const corner =
       payload.corner === "br" || payload.corner === "bl" || payload.corner === "tr" || payload.corner === "tl"
         ? payload.corner

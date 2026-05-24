@@ -3,6 +3,7 @@ import {
   getAppearanceRevisionFromPayload,
   parseUpdatedAtMs,
   planDeskPetSyncMerge,
+  shouldPreserveExistingAppearance,
 } from "./client/deskPetSyncMerge.js";
 
 describe("parseUpdatedAtMs", () => {
@@ -27,6 +28,50 @@ describe("getAppearanceRevisionFromPayload", () => {
     expect(getAppearanceRevisionFromPayload({ updatedAt: "2026-05-23T23:43:46.404Z" })).toBe(
       "2026-05-23T23:43:46.404Z"
     );
+  });
+});
+
+describe("shouldPreserveExistingAppearance", () => {
+  it("preserves appearance when game-only save omits appearanceUpdatedAt", () => {
+    expect(
+      shouldPreserveExistingAppearance(
+        { updatedAt: "2026-05-24T12:00:00.000Z" },
+        {
+          appearanceUpdatedAt: "2026-05-23T23:50:00.000Z",
+          updatedAt: "2026-05-23T10:00:00.000Z",
+        }
+      )
+    ).toBe(true);
+  });
+
+  it("preserves appearance when incoming revision is not newer", () => {
+    expect(
+      shouldPreserveExistingAppearance(
+        {
+          appearanceUpdatedAt: "2026-05-23T23:50:00.000Z",
+          updatedAt: "2026-05-24T12:00:00.000Z",
+        },
+        {
+          appearanceUpdatedAt: "2026-05-23T23:55:00.000Z",
+          updatedAt: "2026-05-23T10:00:00.000Z",
+        }
+      )
+    ).toBe(true);
+  });
+
+  it("allows appearance update when incoming revision is newer", () => {
+    expect(
+      shouldPreserveExistingAppearance(
+        {
+          appearanceUpdatedAt: "2026-05-24T12:00:00.000Z",
+          updatedAt: "2026-05-24T12:00:00.000Z",
+        },
+        {
+          appearanceUpdatedAt: "2026-05-23T23:50:00.000Z",
+          updatedAt: "2026-05-23T10:00:00.000Z",
+        }
+      )
+    ).toBe(false);
   });
 });
 

@@ -226,6 +226,64 @@ describe("buildApp HTTP", () => {
     expect(got.body.state?.updatedAt).toBe("2026-05-23T23:43:46.404Z");
   });
 
+  it("PUT /api/desk-pet preserves appearance when game-only save omits appearanceUpdatedAt", async () => {
+    const { createUser } = await import("./db.js");
+    const { hashPassword } = await import("./passwords.js");
+    const email = `desk-pet-game-save-${Date.now()}@example.com`;
+    createUser(email, hashPassword("sync-test-pass"), "Desk", "Pet");
+
+    const login = await request(app)
+      .post("/auth/login")
+      .type("form")
+      .send({ email, password: "sync-test-pass", redirect: "/" })
+      .expect(302);
+    const cookie = login.headers["set-cookie"];
+
+    const appearance = {
+      v: 1 as const,
+      game: {
+        fullness: 50,
+        lastFullnessAt: "2026-05-23T23:43:45.803Z",
+        tickleCount: 0,
+        feedCount: 0,
+        expired: false,
+        alertedCute: false,
+        alertedUrgent: false,
+      },
+      displayName: "Sal-n-Pepa",
+      corner: "bl" as const,
+      palette: "berry" as const,
+      appearanceUpdatedAt: "2026-05-23T23:50:00.000Z",
+      updatedAt: "2026-05-23T23:43:46.404Z",
+    };
+
+    await request(app).put("/api/desk-pet").set("Cookie", cookie).send({ state: appearance }).expect(200);
+
+    const deathSave = {
+      ...appearance,
+      game: {
+        ...appearance.game,
+        fullness: 0,
+        expired: true,
+      },
+      displayName: "",
+      corner: "br" as const,
+      palette: "lavender" as const,
+      updatedAt: "2026-05-24T08:00:00.000Z",
+    };
+    delete (deathSave as { appearanceUpdatedAt?: string }).appearanceUpdatedAt;
+
+    await request(app).put("/api/desk-pet").set("Cookie", cookie).send({ state: deathSave }).expect(200);
+
+    const got = await request(app).get("/api/desk-pet").set("Cookie", cookie).expect(200);
+    expect(got.body.state?.game?.expired).toBe(true);
+    expect(got.body.state?.displayName).toBe("Sal-n-Pepa");
+    expect(got.body.state?.corner).toBe("bl");
+    expect(got.body.state?.palette).toBe("berry");
+    expect(got.body.state?.appearanceUpdatedAt).toBe("2026-05-23T23:50:00.000Z");
+    expect(got.body.state?.updatedAt).toBe("2026-05-24T08:00:00.000Z");
+  });
+
   it("PUT /api/desk-pet rejects invalid state body", async () => {
     const { createUser } = await import("./db.js");
     const { hashPassword } = await import("./passwords.js");
