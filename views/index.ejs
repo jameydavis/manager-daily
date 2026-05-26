@@ -66,7 +66,7 @@
                         <% row.forEach(function (c) { %>
                           <td
                             data-day="<%= c.day %>"
-                            class="cal-cell <%= c.inMonth ? '' : 'muted' %> <%= c.isToday ? 'today' : '' %> <%= c.day === selected ? 'cal-selected' : '' %> <% if (sprintRangeActive && c.inMonth) { %><%= c.inSprint ? 'cal-sprint-day' : 'cal-non-sprint-day' %><% } %>">
+                            class="cal-cell <%= c.inMonth ? '' : 'muted' %> <%= c.isToday ? 'today' : '' %> <%= c.day === selected ? 'cal-selected' : '' %> <% if (sprintRangeActive) { %><%= c.inSprint ? 'cal-sprint-day' : 'cal-non-sprint-day' %><% } %>">
                             <a href="/?date=<%= c.day %>">
                               <%= c.label %>
                             </a>
@@ -206,7 +206,99 @@
     </aside>
 
     <section class="panel integrations">
-      <h2>Jira</h2>
+      <h2>Inbox alerts</h2>
+      <% if (!emailKeywordsConfigured) { %>
+        <p class="hint">Set <code>EMAIL_KEYWORDS</code> in <code>.env</code> (comma-separated, e.g. <code>urgent,action required,ASAP</code>) to enable inbox scanning.</p>
+      <% } else if (!inboxConfigured) { %>
+        <p class="hint">Configure Microsoft Graph OAuth (recommended for Sweetwater / Outlook) or legacy IMAP in <code>.env</code>.</p>
+        <ol class="setup-steps">
+          <li>Register an app in <a class="link" href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">Azure Entra ID → App registrations</a> (work account).</li>
+          <li>Add redirect URI (Web): <code><%= graphRedirectUri %></code></li>
+          <li>API permissions: <strong>Microsoft Graph → Delegated → Mail.Read, User.Read, offline_access</strong>. Grant admin consent if IT requires it.</li>
+          <li>Create a client secret; set <code>MS_GRAPH_CLIENT_ID</code>, <code>MS_GRAPH_CLIENT_SECRET</code>, and optional <code>MS_GRAPH_TENANT_ID</code> (tenant ID or <code>organizations</code>).</li>
+          <li>Restart the app, sign in, and click <strong>Connect Outlook</strong>.</li>
+        </ol>
+      <% } else if (graphAppConfigured && !currentUser) { %>
+        <p class="hint"><a class="link" href="/login?redirect=<%= encodeURIComponent('/?date=' + selected) %>">Sign in</a> to connect your Outlook mailbox.</p>
+      <% } else if (graphAppConfigured && !microsoftMailConnected && !imapEmailConfigured) { %>
+        <p class="hint">Connect your Sweetwater Outlook account to scan for keyword matches.</p>
+        <form method="get" action="/auth/microsoft/connect" class="email-connect-form">
+          <input type="hidden" name="redirect" value="/?date=<%= selected %>" />
+          <button type="submit">Connect Outlook</button>
+        </form>
+      <% } else if (graphAppConfigured && !microsoftMailConnected && imapEmailConfigured) { %>
+        <p class="hint">Connect Outlook (recommended) or rely on the server IMAP config.</p>
+        <form method="get" action="/auth/microsoft/connect" class="email-connect-form">
+          <input type="hidden" name="redirect" value="/?date=<%= selected %>" />
+          <button type="submit">Connect Outlook</button>
+        </form>
+      <% } else { %>
+        <% if (microsoftFlash === 'connected') { %>
+          <p class="hint" role="status">Outlook connected. Inbox scan is active.</p>
+        <% } else if (microsoftFlash === 'disconnected') { %>
+          <p class="hint" role="status">Outlook disconnected.</p>
+        <% } else if (microsoftFlash) { %>
+          <p class="hint error-text"><%= microsoftFlash %></p>
+        <% } %>
+        <% if (graphAppConfigured && microsoftMailConnected) { %>
+          <form method="post" action="/auth/microsoft/disconnect" class="email-connect-form email-connect-form--inline">
+            <input type="hidden" name="redirect" value="/?date=<%= selected %>" />
+            <button type="submit" class="ghost secondary">Disconnect Outlook</button>
+          </form>
+        <% } %>
+        <% if (emailMatchError) { %>
+          <p class="hint error-text">Could not read inbox: <%= emailMatchError %></p>
+        <% } else if (!emailMatches.length) { %>
+          <p class="hint">No matching messages in the last scan. Adjust <code>EMAIL_KEYWORDS</code> or <code>EMAIL_MAX_SCAN</code> in <code>.env</code>.</p>
+        <% } else { %>
+          <p class="hint">Recent mail matching your keywords. Add to <strong><%= selected %></strong> or dismiss.</p>
+          <ul class="email-match-list">
+          <% emailMatches.forEach(function (m) { %>
+            <% var noteLines = [];
+               if (m.from) noteLines.push('From: ' + m.from);
+               if (m.dateLabel) noteLines.push('Date: ' + m.dateLabel);
+               if (m.matchedKeywords && m.matchedKeywords.length) noteLines.push('Matched: ' + m.matchedKeywords.join(', '));
+               if (m.snippet) noteLines.push('', m.snippet);
+               var taskNotes = noteLines.join('\n'); %>
+            <li class="email-match">
+              <div class="email-match-body">
+                <p class="email-match-subject"><%= m.subject %></p>
+                <p class="email-match-meta">
+                  <% if (m.from) { %><span><%= m.from %></span><% } %>
+                  <% if (m.dateLabel) { %><span><%= m.dateLabel %></span><% } %>
+                </p>
+                <% if (m.matchedKeywords && m.matchedKeywords.length) { %>
+                  <p class="email-match-keywords">
+                    <% m.matchedKeywords.forEach(function (kw) { %>
+                      <span class="email-match-kw"><%= kw %></span>
+                    <% }); %>
+                  </p>
+                <% } %>
+                <% if (m.snippet) { %>
+                  <p class="email-match-snippet"><%= m.snippet %></p>
+                <% } %>
+              </div>
+              <div class="email-match-actions">
+                <form method="post" action="/tasks/from-email" class="email-match-add">
+                  <input type="hidden" name="day" value="<%= selected %>" />
+                  <input type="hidden" name="title" value="<%= m.subject %>" />
+                  <input type="hidden" name="notes" value="<%= taskNotes %>" />
+                  <input type="hidden" name="fingerprint" value="<%= m.fingerprint %>" />
+                  <button type="submit">Add task</button>
+                </form>
+                <form method="post" action="/email-suggestions/dismiss" class="email-match-dismiss">
+                  <input type="hidden" name="day" value="<%= selected %>" />
+                  <input type="hidden" name="fingerprint" value="<%= m.fingerprint %>" />
+                  <button type="submit" class="ghost secondary">Dismiss</button>
+                </form>
+              </div>
+            </li>
+          <% }); %>
+          </ul>
+        <% } %>
+      <% } %>
+
+      <h2 class="integrations-heading integrations-heading--after">Jira</h2>
       <% if (!jiraConfigured) { %>
         <p class="hint">Connect <strong>Jira Cloud</strong> with an API token (not a separate “Jira API key”):</p>
         <ol class="setup-steps">

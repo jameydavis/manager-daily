@@ -1,5 +1,10 @@
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
+import {
+  emailKeywordsConfigured,
+  emailKeywordsForMatch,
+  textMatchesEmailKeywords,
+} from "./emailKeywords.js";
 
 export type EmailMatch = {
   fingerprint: string;
@@ -10,28 +15,19 @@ export type EmailMatch = {
   matchedKeywords: string[];
 };
 
-function parseKeywords(raw: string | undefined): string[] {
-  if (!raw?.trim()) return [];
-  return raw
-    .split(/[\r\n,]+/)
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 export function importantEmailConfigured(): boolean {
   const host = process.env.EMAIL_IMAP_HOST?.trim();
   const user = process.env.EMAIL_IMAP_USER?.trim();
   const pass = process.env.EMAIL_IMAP_PASS?.trim();
-  return Boolean(host && user && pass && parseKeywords(process.env.EMAIL_KEYWORDS).length > 0);
+  return Boolean(host && user && pass && emailKeywordsConfigured());
 }
 
 function keywordsForMatch(): string[] {
-  return parseKeywords(process.env.EMAIL_KEYWORDS);
+  return emailKeywordsForMatch();
 }
 
 function textMatchesKeywords(haystack: string, keywords: string[]): string[] {
-  const lower = haystack.toLowerCase();
-  return keywords.filter((k) => lower.includes(k));
+  return textMatchesEmailKeywords(haystack, keywords);
 }
 
 function fingerprintFor(messageId: string | undefined, uid: number, folder: string): string {

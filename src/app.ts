@@ -28,8 +28,10 @@ import {
   createSession,
   createUser,
   deleteTask,
+  deleteUserMicrosoftMailTokens,
   dismissEmailSuggestion,
   findUserWithHashByEmail,
+  hasUserMicrosoftMailTokens,
   completeOpenTasksWithTitle,
   getTaskDone,
   getTaskTitle,
@@ -37,6 +39,7 @@ import {
   listDismissedEmailFingerprints,
   listTasks,
   normalizeEmail,
+  saveUserMicrosoftMailTokens,
   toggleTask,
   upsertUserDeskPetState,
   type TaskRow,
@@ -68,11 +71,40 @@ import {
 } from "./boardSprint.js";
 import { parseDirectReportNamesFromEnv, resolveDirectReports } from "./directReports.js";
 import { enrichDirectReportsWithIssues } from "./reportAssigneeIssues.js";
+import { emailKeywordsConfigured } from "./emailKeywords.js";
 import { fetchImportantEmailMatches, importantEmailConfigured } from "./importantEmail.js";
+import {
+  buildMicrosoftAuthorizeUrl,
+  createMicrosoftOAuthState,
+  exchangeMicrosoftAuthCode,
+  fetchImportantEmailMatchesGraph,
+  microsoftGraphConfigured,
+  MS_OAUTH_STATE_COOKIE,
+  readMicrosoftGraphConfig,
+} from "./microsoftGraph.js";
 import { homeForDay, safeRedirectPath, withTaskRemovedFlash } from "./httpHelpers.js";
 
 /** Title for tasks created via the “Follow up from email” paste form. */
 export const EMAIL_FOLLOW_UP_TITLE = "Follow up from Email";
+
+function inboxAlertsConfigured(): boolean {
+  if (!emailKeywordsConfigured()) return false;
+  return microsoftGraphConfigured() || importantEmailConfigured();
+}
+
+function redirectWithInboxFlash(
+  res: import("express").Response,
+  returnTo: string,
+  flash: { microsoftConnected?: boolean; microsoftError?: string; microsoftDisconnected?: boolean }
+): void {
+  const path = safeRedirectPath(returnTo, "/");
+  const sep = path.includes("?") ? "&" : "?";
+  const parts: string[] = [];
+  if (flash.microsoftConnected) parts.push("microsoftConnected=1");
+  if (flash.microsoftDisconnected) parts.push("microsoftDisconnected=1");
+  if (flash.microsoftError) parts.push(`microsoftError=${encodeURIComponent(flash.microsoftError)}`);
+  res.redirect(parts.length ? `${path}${sep}${parts.join("&")}` : path);
+}
 
 /** Mirrored from `localStorage` in `public/user-settings.js` so the server can pre-order tasks. */
 export const TASKS_COMPLETED_BOTTOM_COOKIE = "dailyDashboardTasksCompletedBottom";
@@ -382,6 +414,67 @@ app.post("/auth/change-password", requireAuth, (req, res) => {
   });
 });
 
+app.get("/auth/microsoft/connect", requireAuth, (req, res) => {
+  if (!microsoftGraphConfigured()) {
+    redirectWithInboxFlash(res, safeRedirectPath(req.query.redirect, "/"), {
+      microsoftError: "Microsoft Graph is not configured on this server.",
+    });
+    return;
+  }
+  const state = createMicrosoftOAuthState();
+  const returnTo = safeRedirectPath(req.query.redirect, "/");
+  const authorizeUrl = buildMicrosoftAuthorizeUrl(state);
+  if (!authorizeUrl) {
+    redirectWithInboxFlash(res, returnTo, {
+      microsoftError: "Could not start Microsoft sign-in.",
+    });
+    return;
+  }
+  res.cookie(MS_OAUTH_STATE_COOKIE, JSON.stringify({ state, returnTo }), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 10 * 60 * 1000,
+    path: "/",
+  });
+  res.redirect(authorizeUrl);
+});
+
+app.get("/auth/microsoft/callback", requireAuth, async (req, res, next) => {
+  const returnTo = safeRedirectPath("/", "/");
+  try {
+    const rawState = req.cookies?.[MS_OAUTH_STATE_COOKIE];
+    res.clearCookie(MS_OAUTH_STATE_COOKIE, { path: "/" });
+
+    const expected =
+      typeof rawState === "string"
+        ? (JSON.parse(rawState) as { state?: string; returnTo?: string })
+        : null;
+    const queryState = typeof req.query.state === "string" ? req.query.state : "";
+    const code = typeof req.query.code === "string" ? req.query.code : "";
+
+    if (!expected?.state || !queryState || expected.state !== queryState || !code) {
+      redirectWithInboxFlash(res, expected?.returnTo || returnTo, {
+        microsoftError: "Microsoft sign-in was interrupted or invalid.",
+      });
+      return;
+    }
+
+    const tokens = await exchangeMicrosoftAuthCode(code);
+    saveUserMicrosoftMailTokens(req.authUser!.id, tokens);
+    redirectWithInboxFlash(res, expected.returnTo || returnTo, { microsoftConnected: true });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Microsoft sign-in failed.";
+    redirectWithInboxFlash(res, returnTo, { microsoftError: message });
+  }
+});
+
+app.post("/auth/microsoft/disconnect", requireAuth, (req, res) => {
+  deleteUserMicrosoftMailTokens(req.authUser!.id);
+  const returnTo = safeRedirectPath(req.body.redirect, "/");
+  redirectWithInboxFlash(res, returnTo, { microsoftDisconnected: true });
+});
+
 app.get("/api/desk-pet", (req, res) => {
   const user = req.authUser;
   if (!user) {
@@ -562,15 +655,40 @@ app.get("/", async (req, res, next) => {
         "Set JIRA_DIRECT_REPORTS in .env (comma- or newline-separated names; optional Name|accountId).";
     }
 
-    const emailConfigured = importantEmailConfigured();
+    const imapEmailConfigured = importantEmailConfigured();
+    const graphAppConfigured = microsoftGraphConfigured();
+    const inboxConfigured = inboxAlertsConfigured();
+    let microsoftMailConnected = false;
     let emailMatches: Awaited<ReturnType<typeof fetchImportantEmailMatches>>["matches"] = [];
     let emailMatchError: string | null = null;
-    if (emailConfigured) {
+
+    if (inboxConfigured) {
       const dismissed = new Set(listDismissedEmailFingerprints());
-      const emailResult = await fetchImportantEmailMatches(dismissed);
-      emailMatches = emailResult.matches;
-      emailMatchError = emailResult.error;
+      if (req.authUser && graphAppConfigured && hasUserMicrosoftMailTokens(req.authUser.id)) {
+        microsoftMailConnected = true;
+        const graphResult = await fetchImportantEmailMatchesGraph(req.authUser.id, dismissed);
+        emailMatches = graphResult.matches;
+        emailMatchError = graphResult.error;
+        if (graphResult.disconnected) {
+          microsoftMailConnected = false;
+        }
+      } else if (imapEmailConfigured) {
+        const emailResult = await fetchImportantEmailMatches(dismissed);
+        emailMatches = emailResult.matches;
+        emailMatchError = emailResult.error;
+      }
     }
+
+    const microsoftFlash =
+      typeof req.query.microsoftConnected === "string"
+        ? "connected"
+        : typeof req.query.microsoftDisconnected === "string"
+          ? "disconnected"
+          : typeof req.query.microsoftError === "string"
+            ? req.query.microsoftError
+            : null;
+
+    const graphRedirectUri = readMicrosoftGraphConfig()?.redirectUri ?? "";
 
     res.render("index", {
       selected,
@@ -596,9 +714,15 @@ app.get("/", async (req, res, next) => {
       jiraError,
       directReports,
       directReportsError,
-      emailConfigured,
+      inboxConfigured,
+      graphAppConfigured,
+      imapEmailConfigured,
+      microsoftMailConnected,
       emailMatches,
       emailMatchError,
+      microsoftFlash,
+      emailKeywordsConfigured: emailKeywordsConfigured(),
+      graphRedirectUri,
       emailFollowUpTitle: EMAIL_FOLLOW_UP_TITLE,
     });
   } catch (e) {

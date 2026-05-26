@@ -43,13 +43,14 @@ Copy **`.env.example`** to **`.env`** and adjust:
 | **Sprint shading** | `SPRINT_START` / `SPRINT_END` (YYYY-MM-DD), or rely on Jira board sprint below. |
 | **Jira** | `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`, `ATLASSIAN_SITE`, `JIRA_BOARD_ID`, optional `JIRA_JQL`, `JIRA_MAX_RESULTS`. |
 | **My team** | `JIRA_DIRECT_REPORTS` (comma/newline list; optional `Name|accountId`). |
-| **Important email** (optional) | `EMAIL_IMAP_HOST`, `EMAIL_IMAP_USER`, `EMAIL_IMAP_PASS`, and **`EMAIL_KEYWORDS`** (comma/newline)—when all are set, the app can surface matching inbox snippets on the day view. |
+| **Inbox alerts** (optional) | **`EMAIL_KEYWORDS`** (required). **Microsoft Graph OAuth** (recommended for Outlook / M365): `MS_GRAPH_CLIENT_ID`, `MS_GRAPH_CLIENT_SECRET`, optional `MS_GRAPH_TENANT_ID`, `APP_BASE_URL` — each signed-in user clicks **Connect Outlook** on the day view. Legacy **IMAP** fallback: `EMAIL_IMAP_HOST`, `EMAIL_IMAP_USER`, `EMAIL_IMAP_PASS`. |
 
 ## Using the app effectively
 
 - **Pick a day** from the calendar or `?date=YYYY-MM-DD` in the URL.
 - **Tasks:** add title + optional notes, mark done, **Remove** (no confirm—feedback is a **toast**).
 - **Carry over** copies incomplete items from the **last 14 calendar days** onto **today** (then opens today’s view). Each carried task adds **+1%** desk-buddy contentment (no feed/decay spike).
+- **Inbox alerts:** keyword scan on Outlook mail via **Microsoft Graph** (per-user OAuth) or optional server **IMAP**; add matches to the selected day or dismiss.
 - **Jira panel:** add issues to the selected day when Jira env vars are set.
 - **My team:** loads when Jira is configured and direct reports are set (env or defaults).
 

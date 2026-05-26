@@ -140,28 +140,15 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
 
   /**
    * @param {string} ringHtml
-   * @param {string} barHtml
    */
-  function dashboardMetricWidget(ringHtml, barHtml) {
+  function dashboardMetricWidget(ringHtml) {
     return `
       <div class="jira-widget-body">
         ${ringHtml}
-        ${barHtml}
       </div>
     `;
   }
 
-  /** @param {number} pct */
-  function progressBar(pct, label) {
-    const p = Math.min(100, Math.max(0, Math.round(pct)));
-    return `
-      <div class="jira-progress">
-        <div class="jira-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}" aria-label="${escapeHtml(label)}">
-          <div class="jira-progress-fill" style="width: ${p}%"></div>
-        </div>
-      </div>
-    `;
-  }
 
   function formatSprintDaysLeftValue(daysLeft) {
     if (daysLeft === 0) return "0";
@@ -177,15 +164,9 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
 
     const daysLeft = typeof sprintContext.daysLeft === "number" ? sprintContext.daysLeft : 0;
     const totalDays = typeof sprintContext.totalDays === "number" ? sprintContext.totalDays : null;
-    const progressPct =
-      typeof sprintContext.progressPct === "number" ? sprintContext.progressPct : 0;
     const remainingPct =
       totalDays && totalDays > 0 ? Math.round((daysLeft / totalDays) * 100) : 0;
     const daysLabel = daysLeft === 1 ? "day left" : "days left";
-    const timelineLabel =
-      totalDays != null
-        ? `${progressPct}% through sprint · ${totalDays} days total`
-        : `${progressPct}% through sprint`;
 
     sprintWidgetEl.innerHTML = dashboardMetricWidget(
       ringWidget(
@@ -193,8 +174,7 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
         formatSprintDaysLeftValue(daysLeft),
         daysLabel,
         daysLeft <= 2 ? "danger" : "accent"
-      ),
-      progressBar(progressPct, timelineLabel)
+      )
     );
   }
 
@@ -254,16 +234,12 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
     const total = progress && typeof progress.total === "number" ? progress.total : 0;
     const done = progress && typeof progress.done === "number" ? progress.done : 0;
     if (total > 0) {
-      const open = Math.max(0, total - done);
       const pct = Math.round((done / total) * 100);
       const tone = pct >= 100 ? "done" : pct <= 25 ? "danger" : "accent";
       const ringLabel = total === 1 ? "subtask done" : "subtasks done";
-      const barLabel =
-        open === 0 ? `${pct}% complete · all done` : `${pct}% complete · ${open} open`;
 
       subtaskWidgetEl.innerHTML = dashboardMetricWidget(
-        ringWidget(pct, `${done}/${total}`, ringLabel, tone),
-        progressBar(pct, barLabel)
+        ringWidget(pct, `${done}/${total}`, ringLabel, tone)
       );
       return;
     }
@@ -287,12 +263,6 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
         typeof timeBudget?.originalEstimate === "string" && timeBudget.originalEstimate.trim()
           ? timeBudget.originalEstimate.trim()
           : "—";
-      const barLabel =
-        pctRaw > 100
-          ? `${pctRaw}% of estimate · over budget`
-          : pctRaw >= 100
-            ? `${pctRaw}% of estimate · at budget`
-            : `${pctRaw}% of estimate used`;
 
       subtaskWidgetEl.innerHTML = dashboardMetricWidget(
         ringWidget(
@@ -301,8 +271,7 @@ import { formatDaysAgo, stalenessTone } from "./client/jiraStalenessDisplay.js";
           ringEstimateLabelLines(estimateLabel),
           tone,
           true
-        ),
-        progressBar(pct, barLabel)
+        )
       );
       return;
     }

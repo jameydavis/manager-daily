@@ -168,4 +168,20 @@ describe("monthGrid", () => {
     const apr15 = weeks.flat().find((c) => c.day === "2026-04-15");
     expect(apr15?.inSprint).toBe(true);
   });
+
+  it("marks sprint days in trailing next-month cells", () => {
+    const weeks = monthGrid(2026, 4, "2026-05-26", "2026-05-26", "2026-06-06");
+    const flat = weeks.flat();
+    const may31 = flat.find((c) => c.day === "2026-05-31");
+    expect(may31?.inMonth).toBe(true);
+    expect(may31?.inSprint).toBe(true);
+    const jun1 = flat.find((c) => c.day === "2026-06-01");
+    expect(jun1?.inMonth).toBe(false);
+    expect(jun1?.inSprint).toBe(true);
+    const jun6 = flat.find((c) => c.day === "2026-06-06");
+    expect(jun6?.inMonth).toBe(false);
+    expect(jun6?.inSprint).toBe(true);
+    const afterSprint = flat.find((c) => c.day === "2026-06-07");
+    expect(afterSprint).toBeUndefined();
+  });
 });

@@ -80,6 +80,17 @@ db.exec(`
   );
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_microsoft_mail (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    scope TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 export type AuthUserRow = {
   id: number;
   email: string;
@@ -370,6 +381,59 @@ export function carryOverIncompleteFromDays(fromDays: string[], toDay: string): 
     n++;
   }
   return n;
+}
+
+export type UserMicrosoftMailTokens = {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  scope: string | null;
+};
+
+export function getUserMicrosoftMailTokens(userId: number): UserMicrosoftMailTokens | null {
+  const row = db
+    .prepare(
+      `SELECT access_token, refresh_token, expires_at, scope FROM user_microsoft_mail WHERE user_id = ?`
+    )
+    .get(userId) as
+    | {
+        access_token: string;
+        refresh_token: string;
+        expires_at: number;
+        scope: string | null;
+      }
+    | undefined;
+  return row ?? null;
+}
+
+export function saveUserMicrosoftMailTokens(userId: number, tokens: UserMicrosoftMailTokens): void {
+  db.prepare(
+    `INSERT INTO user_microsoft_mail (user_id, access_token, refresh_token, expires_at, scope, updated_at)
+     VALUES (?, ?, ?, ?, ?, datetime('now'))
+     ON CONFLICT(user_id) DO UPDATE SET
+       access_token = excluded.access_token,
+       refresh_token = excluded.refresh_token,
+       expires_at = excluded.expires_at,
+       scope = excluded.scope,
+       updated_at = datetime('now')`
+  ).run(
+    userId,
+    tokens.access_token,
+    tokens.refresh_token,
+    tokens.expires_at,
+    tokens.scope
+  );
+}
+
+export function deleteUserMicrosoftMailTokens(userId: number): void {
+  db.prepare(`DELETE FROM user_microsoft_mail WHERE user_id = ?`).run(userId);
+}
+
+export function hasUserMicrosoftMailTokens(userId: number): boolean {
+  const row = db
+    .prepare(`SELECT 1 AS ok FROM user_microsoft_mail WHERE user_id = ? LIMIT 1`)
+    .get(userId) as { ok: number } | undefined;
+  return Boolean(row);
 }
 
 /** Releases the SQLite connection (e.g. tests or graceful shutdown). */
