@@ -862,38 +862,38 @@ html[data-desk-pet="off"] #desk-pet {
   background: var(--today);
 }
 
-/* In-month sprint emphasis when a sprint range is active */
-.cal-cell.cal-sprint-day:not(.muted) a {
+/* Sprint emphasis when a sprint range is active (spans adjacent months too) */
+.cal-cell.cal-sprint-day a {
   font-weight: 700;
   color: var(--text);
   opacity: 1;
 }
 
-.cal-cell.cal-non-sprint-day:not(.muted) a {
+.cal-cell.cal-non-sprint-day a {
   font-weight: 400;
   color: var(--muted);
   opacity: 0.38;
 }
 
-.cal-cell.cal-sprint-day.today:not(.muted) a {
+.cal-cell.cal-sprint-day.today a {
   font-weight: 700;
 }
 
-.cal-cell.cal-non-sprint-day.today:not(.muted) a {
+.cal-cell.cal-non-sprint-day.today a {
   opacity: 0.72;
   font-weight: 600;
 }
 
 /* User preference: hide sprint in/out emphasis (see user-settings.js) */
-html[data-sprint-shading="off"] .cal-cell.cal-sprint-day:not(.muted) a,
-html[data-sprint-shading="off"] .cal-cell.cal-non-sprint-day:not(.muted) a {
+html[data-sprint-shading="off"] .cal-cell.cal-sprint-day a,
+html[data-sprint-shading="off"] .cal-cell.cal-non-sprint-day a {
   font-weight: unset;
   color: inherit;
   opacity: unset;
 }
 
-html[data-sprint-shading="off"] .cal-cell.cal-sprint-day.today:not(.muted) a,
-html[data-sprint-shading="off"] .cal-cell.cal-non-sprint-day.today:not(.muted) a {
+html[data-sprint-shading="off"] .cal-cell.cal-sprint-day.today a,
+html[data-sprint-shading="off"] .cal-cell.cal-non-sprint-day.today a {
   font-weight: unset;
   opacity: unset;
 }
@@ -1096,6 +1096,93 @@ button.danger:hover {
 
 .error-text {
   color: var(--danger);
+}
+
+.integrations-heading--after {
+  margin-top: 1.35rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.email-match-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.email-match {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.email-match-body {
+  min-width: 0;
+}
+
+.email-match-subject {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.email-match-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.email-match-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.4rem 0 0;
+}
+
+.email-match-kw {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--report-hint) 55%, var(--border));
+  color: var(--report-hint);
+  background: color-mix(in srgb, var(--report-hint) 10%, transparent);
+}
+
+.email-match-snippet {
+  margin: 0.45rem 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text);
+  opacity: 0.92;
+}
+
+.email-match-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.email-match-add,
+.email-match-dismiss {
+  margin: 0;
+}
+
+.email-connect-form {
+  margin: 0.65rem 0 0;
+}
+
+.email-connect-form--inline {
+  margin: 0 0 0.65rem;
 }
 
 .jira-list {
@@ -3126,11 +3213,10 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 }
 
 .jira-widget-body {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 0.5rem;
+  display: flex;
   flex: 1 1 auto;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-height: 0;
   height: 100%;
@@ -3138,9 +3224,7 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 }
 
 .jira-widget-body > .jira-ring {
-  grid-row: 1;
-  align-self: center;
-  justify-self: center;
+  flex-shrink: 0;
   height: 100%;
   width: auto;
   max-width: 100%;
@@ -3161,22 +3245,14 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
 }
 
 .jira-widget-body > .jira-ring--compact .jira-ring-center {
-  inset: 12%;
+  inset: 14%;
   gap: 0.06rem;
 }
 
-.jira-widget-body > .jira-ring--compact .jira-ring-value {
-  font-size: clamp(0.68rem, 16cqmin, 1rem);
-}
-
 .jira-widget-body > .jira-ring--compact .jira-ring-label {
-  font-size: clamp(0.48rem, 8cqmin, 0.62rem);
-}
-
-.jira-widget-body > .jira-progress {
-  grid-row: 2;
-  align-self: end;
-  width: 100%;
+  display: block;
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
 
 .jira-widget-empty {
@@ -3326,23 +3402,6 @@ html[data-theme="light"] #desk-pet .desk-pet-settings-hint--error {
   letter-spacing: 0.02em;
   max-width: 100%;
   text-transform: none;
-}
-
-.jira-progress {
-  display: block;
-}
-
-.jira-progress-track {
-  height: 0.65rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--border) 72%, transparent);
-  overflow: hidden;
-}
-
-.jira-progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 65%, var(--task-done)));
 }
 
 @media (max-width: 1100px) {
