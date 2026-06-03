@@ -1,0 +1,263 @@
+/**
+ * Desk buddy pixel-art render mode.
+ * Active when #desk-pet has .desk-pet--render-pixel or html[data-desk-pet-render="pixel"].
+ * Palette tokens from desk-pet-palettes.css still apply.
+ */
+html[data-desk-pet-render="pixel"] #desk-pet,
+#desk-pet.desk-pet--render-pixel {
+  --pet-pixel-outline: color-mix(in srgb, var(--pet-body-d) 70%, #1a1028);
+  --pet-pixel-shadow: color-mix(in srgb, var(--pet-body-d) 55%, #000);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-panel,
+#desk-pet.desk-pet--render-pixel .desk-pet-panel {
+  border-radius: 0;
+  background: var(--pet-surface-2);
+  border-width: 3px;
+  box-shadow:
+    4px 4px 0 var(--pet-pixel-shadow),
+    inset 0 0 0 1px color-mix(in srgb, var(--pet-panel-border) 40%, transparent);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-gear,
+#desk-pet.desk-pet--render-pixel .desk-pet-gear {
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--pet-pixel-shadow);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-title,
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-status,
+#desk-pet.desk-pet--render-pixel .desk-pet-title,
+#desk-pet.desk-pet--render-pixel .desk-pet-status {
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-stage,
+#desk-pet.desk-pet--render-pixel .desk-pet-stage {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature,
+#desk-pet.desk-pet--render-pixel .desk-pet-creature {
+  width: 4.25rem;
+  height: 3.85rem;
+  border-radius: 0;
+  background: var(--pet-body-b);
+  border: 3px solid var(--pet-pixel-outline);
+  box-shadow:
+    inset 4px 4px 0 var(--pet-body-a),
+    inset -4px -4px 0 var(--pet-body-d),
+    3px 3px 0 var(--pet-pixel-shadow);
+  transition: transform 0.08s steps(2, end);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-ear,
+#desk-pet.desk-pet--render-pixel .desk-pet-ear {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 0;
+  background: var(--pet-ear-a);
+  border: 2px solid var(--pet-pixel-outline);
+  box-shadow: inset 2px 2px 0 color-mix(in srgb, var(--pet-ear-b) 55%, #fff);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-ear--left,
+#desk-pet.desk-pet--render-pixel .desk-pet-ear--left {
+  left: -0.05rem;
+  top: 0.05rem;
+  transform: rotate(-12deg);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-ear--right,
+#desk-pet.desk-pet--render-pixel .desk-pet-ear--right {
+  right: -0.05rem;
+  top: 0.05rem;
+  transform: rotate(12deg) scaleX(-1);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-blush,
+#desk-pet.desk-pet--render-pixel .desk-pet-blush {
+  width: 0.5rem;
+  height: 0.28rem;
+  border-radius: 0;
+  opacity: 0.72;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-eye,
+#desk-pet.desk-pet--render-pixel .desk-pet-eye {
+  width: 0.62rem;
+  height: 0.72rem;
+  border-radius: 0;
+  background:
+    linear-gradient(var(--pet-eye-c4), var(--pet-eye-c4)) 50% 58% / 58% 50% no-repeat,
+    linear-gradient(var(--pet-eye-c3), var(--pet-eye-c3)) 50% 50% / 100% 100% no-repeat;
+  border: 2px solid var(--pet-pixel-outline);
+  box-shadow: none;
+  animation: desk-pet-pixel-blink 4.5s steps(1, end) infinite;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-eye-shine,
+#desk-pet.desk-pet--render-pixel .desk-pet-eye-shine {
+  width: 0.18rem;
+  height: 0.18rem;
+  border-radius: 0;
+  left: 0.1rem;
+  top: 0.1rem;
+  background: #fff;
+  box-shadow: none;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-mouth,
+#desk-pet.desk-pet--render-pixel .desk-pet-mouth {
+  width: 0.55rem;
+  height: 0.22rem;
+  border-width: 2px;
+  border-radius: 0;
+  border-top: none;
+  border-left: 2px solid var(--pet-mouth);
+  border-right: 2px solid var(--pet-mouth);
+  border-bottom: 3px solid var(--pet-mouth);
+  transition: none;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature--hungry .desk-pet-eye,
+#desk-pet.desk-pet--render-pixel .desk-pet-creature--hungry .desk-pet-eye {
+  height: 0.22rem;
+  transform: none;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature--happy:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch) .desk-pet-eye,
+#desk-pet.desk-pet--render-pixel
+  .desk-pet-creature--happy:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch)
+  .desk-pet-eye {
+  height: 0.5rem;
+  transform: none;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature--tickle .desk-pet-eye,
+#desk-pet.desk-pet--render-pixel .desk-pet-creature--tickle .desk-pet-eye {
+  height: 0.18rem;
+  transform: none;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature--hungry .desk-pet-mouth,
+#desk-pet.desk-pet--render-pixel .desk-pet-creature--hungry .desk-pet-mouth {
+  width: 0.4rem;
+  height: 0.12rem;
+  border: none;
+  background: var(--pet-mouth-h);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature--happy:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch) .desk-pet-mouth,
+#desk-pet.desk-pet--render-pixel
+  .desk-pet-creature--happy:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch)
+  .desk-pet-mouth {
+  width: 0.72rem;
+  height: 0.28rem;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(.desk-pet-creature--refuse-feed) .desk-pet-eye,
+#desk-pet.desk-pet--render-pixel
+  .desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(.desk-pet-creature--refuse-feed)
+  .desk-pet-eye {
+  height: 0.2rem;
+  transform: none;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(.desk-pet-creature--refuse-feed) .desk-pet-mouth,
+#desk-pet.desk-pet--render-pixel
+  .desk-pet-creature--full:not(.desk-pet-creature--tickle):not(.desk-pet-creature--munch):not(.desk-pet-creature--refuse-feed)
+  .desk-pet-mouth {
+  width: 0.38rem;
+  height: 0.34rem;
+  border-radius: 0;
+  background: var(--pet-mouth-inner-pink);
+  box-shadow: none;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-creature--tickle .desk-pet-mouth,
+#desk-pet.desk-pet--render-pixel .desk-pet-creature--tickle .desk-pet-mouth {
+  width: 0.78rem;
+  height: 0.36rem;
+  border-radius: 0;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-play-ball,
+#desk-pet.desk-pet--render-pixel .desk-pet-play-ball {
+  border-radius: 0;
+  background: var(--pet-meter-fill-1);
+  border: 2px solid var(--pet-pixel-outline);
+  box-shadow: 2px 2px 0 var(--pet-pixel-shadow);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-play-rope,
+#desk-pet.desk-pet--render-pixel .desk-pet-play-rope {
+  border-radius: 0;
+  border-bottom-color: var(--pet-heart);
+  border-left-color: color-mix(in srgb, var(--pet-heart) 70%, transparent);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-food,
+#desk-pet.desk-pet--render-pixel .desk-pet-food {
+  image-rendering: pixelated;
+  filter: contrast(1.08);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-meter,
+#desk-pet.desk-pet--render-pixel .desk-pet-meter {
+  height: 8px;
+  border-radius: 0;
+  border-width: 2px;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-meter-fill,
+#desk-pet.desk-pet--render-pixel .desk-pet-meter-fill {
+  border-radius: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--pet-meter-fill-1) 0 6px,
+    var(--pet-meter-fill-2) 6px 12px,
+    var(--pet-meter-fill-3) 12px 18px
+  );
+  background-size: 18px 100%;
+  box-shadow: none;
+  transition: width 0.2s steps(4, end);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-actions button,
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-revive-inline,
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-collapse-toggle,
+#desk-pet.desk-pet--render-pixel .desk-pet-actions button,
+#desk-pet.desk-pet--render-pixel .desk-pet-revive-inline,
+#desk-pet.desk-pet--render-pixel .desk-pet-collapse-toggle {
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--pet-pixel-shadow);
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-settings-card,
+#desk-pet.desk-pet--render-pixel .desk-pet-settings-card {
+  border-radius: 0;
+}
+
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-settings-select,
+html[data-desk-pet-render="pixel"] #desk-pet .desk-pet-settings-input,
+#desk-pet.desk-pet--render-pixel .desk-pet-settings-select,
+#desk-pet.desk-pet--render-pixel .desk-pet-settings-input {
+  border-radius: 0;
+}
+
+@keyframes desk-pet-pixel-blink {
+  0%,
+  44%,
+  48%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  45%,
+  47% {
+    transform: scaleY(0.15);
+  }
+}

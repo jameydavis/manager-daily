@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/desk-pet-palettes.css" />
   <link rel="stylesheet" href="/desk-pet-palettes-light.css" />
+  <link rel="stylesheet" href="/desk-pet-pixel.css" />
   <%- include('partials/head-prefs') %>
 </head>
 
@@ -18,6 +19,7 @@
   </header>
 
   <main class="layout">
+    <div class="layout-planning">
     <section class="panel calendar-panel">
       <h2 class="calendar-title">
         <%= calendarHeading %>
@@ -135,77 +137,7 @@
           </ul>
     </section>
 
-    <aside class="panel reports-panel" aria-label="Direct reports">
-      <h2>My team</h2>
-      <% if (!jiraConfigured) { %>
-        <p class="hint">Connect Jira in <code>.env</code> to load avatars and profile links for your direct reports.</p>
-        <% } else if (directReportsError) { %>
-          <p class="hint error-text">
-            <%= directReportsError %>
-          </p>
-          <% } else { %>
-            <ul class="report-list">
-              <% directReports.forEach(function (r) { %>
-                <li class="report-card">
-                  <% if (r.avatarUrl) { %>
-                    <img class="report-avatar" src="<%= r.avatarUrl %>" alt="" width="40" height="40" loading="lazy" />
-                    <% } else { %>
-                      <div class="report-avatar report-avatar--placeholder" aria-hidden="true">
-                        <%= (r.displayName || '?' ).charAt(0).toUpperCase() %>
-                      </div>
-                      <% } %>
-                        <div class="report-body">
-                          <% if (r.peopleUrl) { %>
-                            <a class="report-name link" href="<%= r.peopleUrl %>" target="_blank" rel="noopener">
-                              <%= r.displayName %>
-                            </a>
-                            <% } else { %>
-                              <span class="report-name">
-                                <%= r.displayName %>
-                              </span>
-                              <% } %>
-                                    <% if (r.hint) { %>
-                                      <span class="report-hint">
-                                        <%= r.hint %>
-                                      </span>
-                                      <% } %>
-                          <% if (r.assigneeIssuesError) { %>
-                            <p class="report-issues-error"><%= r.assigneeIssuesError %></p>
-                          <% } else if (r.accountId) { %>
-                            <% var hasIP = r.assigneeIssuesInProgress && r.assigneeIssuesInProgress.length; var hasO = r.assigneeIssuesOther && r.assigneeIssuesOther.length; %>
-                            <% if (hasIP) { %>
-                              <ul class="report-issues" aria-label="In Progress">
-                                <% r.assigneeIssuesInProgress.forEach(function (issue) { %>
-                                  <%- include('partials/jira-issue-report-row', { issue: issue, assigneeName: r.displayName }) %>
-                                <% }); %>
-                              </ul>
-                            <% } %>
-                            <% if (!hasIP && !hasO) { %>
-                              <p class="report-issue-empty">No unresolved issues assigned.</p>
-                            <% } else if (!hasIP && hasO) { %>
-                              <p class="report-issue-empty">No issues In Progress.</p>
-                            <% } %>
-                            <% if (hasO) { %>
-                              <details class="report-other-statuses">
-                                <summary class="report-other-statuses-summary" aria-label="Other Statuses, <%= r.assigneeIssuesOther.length %> issues">Other Statuses</summary>
-                                <ul class="report-issues report-issues--other" aria-label="Other statuses">
-                                  <% r.assigneeIssuesOther.forEach(function (issue) { %>
-                                    <%- include('partials/jira-issue-report-row', { issue: issue, assigneeName: r.displayName }) %>
-                                  <% }); %>
-                                </ul>
-                              </details>
-                            <% } %>
-                          <% } %>
-                        </div>
-                </li>
-                <% }); %>
-            </ul>
-            <% } %>
-              <p class="hint report-foot">Edit names in <code>JIRA_DIRECT_REPORTS</code> in <code>.env</code>. Use
-                <code>Name|accountId</code> if Jira finds the wrong person.</p>
-    </aside>
-
-    <section class="panel integrations">
+    <section class="panel inbox-alerts-panel">
       <h2>Inbox alerts</h2>
       <% if (!emailKeywordsConfigured) { %>
         <p class="hint">Set <code>EMAIL_KEYWORDS</code> in <code>.env</code> (comma-separated, e.g. <code>urgent,action required,ASAP</code>) to enable inbox scanning.</p>
@@ -297,8 +229,10 @@
           </ul>
         <% } %>
       <% } %>
+    </section>
 
-      <h2 class="integrations-heading integrations-heading--after">Jira</h2>
+    <section class="panel integrations">
+      <h2>Jira</h2>
       <% if (!jiraConfigured) { %>
         <p class="hint">Connect <strong>Jira Cloud</strong> with an API token (not a separate “Jira API key”):</p>
         <ol class="setup-steps">
@@ -348,6 +282,84 @@
               </ul>
               <% } %>
     </section>
+
+    <div class="layout-planning-merge-slot">
+      <section class="panel merge-requests-panel" aria-label="Merge requests">
+        <h2>Merge Requests</h2>
+        <p class="hint merge-requests-placeholder">Placeholder — merge request tracking will go here.</p>
+      </section>
+    </div>
+    </div>
+
+    <aside class="panel reports-panel" aria-label="Direct reports">
+      <h2>My team</h2>
+      <% if (!jiraConfigured) { %>
+        <p class="hint">Connect Jira in <code>.env</code> to load avatars and profile links for your direct reports.</p>
+        <% } else if (directReportsError) { %>
+          <p class="hint error-text">
+            <%= directReportsError %>
+          </p>
+          <% } else { %>
+            <ul class="report-list">
+              <% directReports.forEach(function (r) { %>
+                <li class="report-card">
+                  <% if (r.avatarUrl) { %>
+                    <img class="report-avatar" src="<%= r.avatarUrl %>" alt="" width="40" height="40" loading="lazy" />
+                    <% } else { %>
+                      <div class="report-avatar report-avatar--placeholder" aria-hidden="true">
+                        <%= (r.displayName || '?' ).charAt(0).toUpperCase() %>
+                      </div>
+                      <% } %>
+                        <div class="report-body">
+                          <% if (r.peopleUrl) { %>
+                            <a class="report-name link" href="<%= r.peopleUrl %>" target="_blank" rel="noopener">
+                              <%= r.displayName %>
+                            </a>
+                            <% } else { %>
+                              <span class="report-name">
+                                <%= r.displayName %>
+                              </span>
+                              <% } %>
+                                    <% if (r.hint) { %>
+                                      <span class="report-hint">
+                                        <%= r.hint %>
+                                      </span>
+                                      <% } %>
+                          <% if (r.assigneeIssuesError) { %>
+                            <p class="report-issues-error"><%= r.assigneeIssuesError %></p>
+                          <% } else if (r.accountId) { %>
+                            <% var hasIP = r.assigneeIssuesInProgress && r.assigneeIssuesInProgress.length; var hasO = r.assigneeIssuesOther && r.assigneeIssuesOther.length; %>
+                            <% if (hasIP) { %>
+                              <ul class="report-issues" aria-label="In Progress">
+                                <% r.assigneeIssuesInProgress.forEach(function (issue) { %>
+                                  <%- include('partials/jira-issue-report-row', { issue: issue, assigneeName: r.displayName }) %>
+                                <% }); %>
+                              </ul>
+                            <% } %>
+                            <% if (!hasIP && !hasO) { %>
+                              <p class="report-issue-empty">No unresolved issues assigned.</p>
+                            <% } else if (!hasIP && hasO) { %>
+                              <p class="report-issue-empty">No issues In Progress.</p>
+                            <% } %>
+                            <% if (hasO) { %>
+                              <details class="report-other-statuses">
+                                <summary class="report-other-statuses-summary" aria-label="Other Statuses, <%= r.assigneeIssuesOther.length %> issues">Other Statuses</summary>
+                                <ul class="report-issues report-issues--other" aria-label="Other statuses">
+                                  <% r.assigneeIssuesOther.forEach(function (issue) { %>
+                                    <%- include('partials/jira-issue-report-row', { issue: issue, assigneeName: r.displayName }) %>
+                                  <% }); %>
+                                </ul>
+                              </details>
+                            <% } %>
+                          <% } %>
+                        </div>
+                </li>
+                <% }); %>
+            </ul>
+            <% } %>
+              <p class="hint report-foot">Edit names in <code>JIRA_DIRECT_REPORTS</code> in <code>.env</code>. Use
+                <code>Name|accountId</code> if Jira finds the wrong person.</p>
+    </aside>
   </main>
 
   <aside id="desk-pet" class="desk-pet desk-pet--corner-br" aria-label="Desk buddy">
@@ -476,6 +488,11 @@
             <option value="honey">Honey</option>
             <option value="arctic">Arctic</option>
             <option value="charcoal">Charcoal</option>
+          </select>
+          <label class="desk-pet-settings-label desk-pet-settings-label--after" for="desk-pet-render">Pet look</label>
+          <select id="desk-pet-render" class="desk-pet-settings-select" autocomplete="off">
+            <option value="smooth">Smooth (default)</option>
+            <option value="pixel">Pixel art</option>
           </select>
         </div>
         <div class="desk-pet-settings-foot">

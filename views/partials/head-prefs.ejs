@@ -7,6 +7,9 @@
     if (localStorage.getItem("dailyDashboardDeskPetEnabled") === "0") {
       document.documentElement.dataset.deskPet = "off";
     }
+    if (localStorage.getItem("dailyDashboardDeskPetRender") === "pixel") {
+      document.documentElement.dataset.deskPetRender = "pixel";
+    }
     if (localStorage.getItem("dailyDashboardTasksCompletedBottom") === "1") {
       document.cookie =
         "dailyDashboardTasksCompletedBottom=1; path=/; max-age=" + 86400 * 400 + "; SameSite=Lax";

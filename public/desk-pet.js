@@ -233,19 +233,24 @@ import {
     "charcoal",
   ]);
 
+  /** localStorage: smooth | pixel — pixel-art creature chrome (desk-pet-pixel.css). */
+  const RENDER_KEY = "dailyDashboardDeskPetRender";
+  const RENDER_IDS = /** @type {const} */ (["smooth", "pixel"]);
+
   const settingsDialog = document.getElementById("desk-pet-settings");
   const settingsOpenBtn = document.getElementById("desk-pet-settings-open");
   const settingsCloseBtn = document.getElementById("desk-pet-settings-close");
   const settingsSaveBtn = document.getElementById("desk-pet-settings-save");
   const cornerSelect = document.getElementById("desk-pet-corner");
   const paletteSelect = document.getElementById("desk-pet-palette");
+  const renderSelect = document.getElementById("desk-pet-render");
   const nameInput = document.getElementById("desk-pet-name");
   const nameHintEl = document.getElementById("desk-pet-name-hint");
   const nameRandomBtn = document.getElementById("desk-pet-name-random");
 
   let settingsEditing = false;
-  /** @type {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} */
-  let settingsDraft = { name: "", corner: "br", palette: "lavender" };
+  /** @type {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number]; render: (typeof RENDER_IDS)[number] }} */
+  let settingsDraft = { name: "", corner: "br", palette: "lavender", render: "smooth" };
 
   function updateNameFieldFeedback() {
     if (!nameHintEl || !nameInput) return;
@@ -348,47 +353,91 @@ import {
     scheduleSyncPush();
   }
 
+  /** @returns {(typeof RENDER_IDS)[number]} */
+  function loadRenderPref() {
+    try {
+      const raw = localStorage.getItem(RENDER_KEY);
+      if (raw === "smooth" || raw === "pixel") return raw;
+    } catch {
+      /* ignore */
+    }
+    return "smooth";
+  }
+
+  /** @param {(typeof RENDER_IDS)[number]} render */
+  function applyRenderPref(render) {
+    if (render === "pixel") {
+      document.documentElement.dataset.deskPetRender = "pixel";
+      root.classList.add("desk-pet--render-pixel");
+      return;
+    }
+    delete document.documentElement.dataset.deskPetRender;
+    root.classList.remove("desk-pet--render-pixel");
+  }
+
+  /** @param {(typeof RENDER_IDS)[number]} render */
+  function writeRenderLocal(render) {
+    try {
+      localStorage.setItem(RENDER_KEY, render);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function saveRenderPref(render) {
+    writeRenderLocal(render);
+  }
+
   applyCornerPref(loadCornerPref());
   applyPalettePref(loadPalettePref());
+  applyRenderPref(loadRenderPref());
   if (cornerSelect) {
     cornerSelect.value = loadCornerPref();
   }
   if (paletteSelect) {
     paletteSelect.value = loadPalettePref();
   }
+  if (renderSelect) {
+    renderSelect.value = loadRenderPref();
+  }
 
-  /** @returns {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} */
+  /** @returns {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number]; render: (typeof RENDER_IDS)[number] }} */
   function readSavedAppearanceSettings() {
     return {
       name: loadStoredPetName(),
       corner: loadCornerPref(),
       palette: loadPalettePref(),
+      render: loadRenderPref(),
     };
   }
 
-  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} appearance */
+  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number]; render: (typeof RENDER_IDS)[number] }} appearance */
   function applyAppearancePreview(appearance) {
     applyCornerPref(appearance.corner);
     applyPalettePref(appearance.palette);
+    applyRenderPref(appearance.render);
     applyPetLabelsWithName(appearance.name);
   }
 
-  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} appearance */
+  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number]; render: (typeof RENDER_IDS)[number] }} appearance */
   function applyAppearanceToUi(appearance) {
     applyCornerPref(appearance.corner);
     applyPalettePref(appearance.palette);
+    applyRenderPref(appearance.render);
     applyPetLabelsWithName(appearance.name);
     if (cornerSelect) cornerSelect.value = appearance.corner;
     if (paletteSelect) paletteSelect.value = appearance.palette;
+    if (renderSelect) renderSelect.value = appearance.render;
     if (nameInput) nameInput.value = appearance.name;
   }
 
-  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number] }} appearance */
+  /** @param {{ name: string; corner: (typeof CORNER_IDS)[number]; palette: (typeof PALETTE_IDS)[number]; render: (typeof RENDER_IDS)[number] }} appearance */
   function persistAppearanceSettings(appearance) {
     const name = typeof appearance.name === "string" ? appearance.name.trim().slice(0, MAX_PET_NAME_LEN) : "";
     writePetNameLocal(name);
     writeCornerLocal(appearance.corner);
     writePaletteLocal(appearance.palette);
+    writeRenderLocal(appearance.render);
     writeAppearanceRevision(new Date().toISOString());
     applyAppearanceToUi({ ...appearance, name });
     scheduleSyncPush();
@@ -399,6 +448,7 @@ import {
     applyAppearancePreview(saved);
     if (cornerSelect) cornerSelect.value = saved.corner;
     if (paletteSelect) paletteSelect.value = saved.palette;
+    if (renderSelect) renderSelect.value = saved.render;
     if (nameInput) nameInput.value = saved.name;
     updateNameFieldFeedback();
   }
@@ -415,6 +465,12 @@ import {
         settingsDraft.palette = /** @type {(typeof PALETTE_IDS)[number]} */ (v);
       }
     }
+    if (renderSelect) {
+      const v = renderSelect.value;
+      if (/** @type {readonly string[]} */ (RENDER_IDS).includes(v)) {
+        settingsDraft.render = /** @type {(typeof RENDER_IDS)[number]} */ (v);
+      }
+    }
   }
 
   if (settingsDialog && settingsOpenBtn && cornerSelect && typeof settingsDialog.showModal === "function") {
@@ -423,6 +479,7 @@ import {
       if (nameInput) nameInput.value = settingsDraft.name;
       cornerSelect.value = settingsDraft.corner;
       if (paletteSelect) paletteSelect.value = settingsDraft.palette;
+      if (renderSelect) renderSelect.value = settingsDraft.render;
       updateNameFieldFeedback();
       settingsEditing = true;
       settingsDialog.showModal();
@@ -496,6 +553,18 @@ import {
     }
     applyPalettePref(palette);
     savePalettePref(palette);
+  });
+  renderSelect?.addEventListener("change", () => {
+    const v = renderSelect.value;
+    if (!/** @type {readonly string[]} */ (RENDER_IDS).includes(v)) return;
+    const render = /** @type {(typeof RENDER_IDS)[number]} */ (v);
+    if (settingsEditing) {
+      settingsDraft.render = render;
+      applyRenderPref(render);
+      return;
+    }
+    applyRenderPref(render);
+    saveRenderPref(render);
   });
 
   applyPetLabels();
@@ -1152,6 +1221,13 @@ import {
     const target = mouth || creature.querySelector(".desk-pet-face") || creature;
     const stageRect = stageEl.getBoundingClientRect();
     const r = target.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) {
+      const cr = creature.getBoundingClientRect();
+      return {
+        x: cr.left + cr.width / 2 - stageRect.left,
+        y: cr.top + cr.height * 0.62 - stageRect.top,
+      };
+    }
     return {
       x: r.left + r.width / 2 - stageRect.left,
       y: r.top + r.height / 2 - stageRect.top,
